@@ -1,0 +1,22 @@
+{
+  "name": "rtca-chat-app",
+  "version": "1.0.0",
+  "description": "Real-time chat application with Gmail OAuth authentication",
+  "main": "server/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "install-server": "cd server && npm install",
+    "install-client": "cd client && npm install",
+    "install-all": "npm run install-server && npm run install-client",
+    "start": "cd server && node server.js"
+  },
+  "keywords": ["chat", "real-time", "gmail", "oauth", "socket.io", "react"],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
