@@ -1,6 +1,12 @@
 # Real-Time Chat Application (RTCA)
 
-A modern real-time chat application with Gmail OAuth authentication, built with React, Node.js, Express, and Socket.IO.
+[![GitHub Repository](https://img.shields.io/badge/GitHub-RTCA-blue?style=flat-square&logo=github)](https://github.com/Krishil1108/RTCA)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=flat-square&logo=node.js)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://reactjs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Database-green?style=flat-square&logo=mongodb)](https://mongodb.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-Real--time-orange?style=flat-square&logo=socket.io)](https://socket.io/)
+
+A full-stack real-time chat application built with Node.js, Express, Socket.IO, React, and MongoDB. Features Gmail authentication, real-time messaging, and a responsive Material-UI design.
 
 ## Features
 
