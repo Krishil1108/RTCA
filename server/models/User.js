@@ -21,6 +21,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  about: {
+    type: String,
+    default: 'Hey there! I am using RTCA Chat.',
+    maxlength: 139
+  },
   isOnline: {
     type: Boolean,
     default: false

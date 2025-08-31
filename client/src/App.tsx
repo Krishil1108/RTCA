@@ -1,31 +1,15 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import LoginPage from './pages/LoginPage';
 import ChatPage from './pages/ChatPage';
+import WhatsAppMainPage from './pages/WhatsAppMainPage';
 import AuthSuccessPage from './pages/AuthSuccessPage';
 import AuthErrorPage from './pages/AuthErrorPage';
 import LoadingSpinner from './components/LoadingSpinner';
 import './App.css';
-
-// Create theme
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -51,8 +35,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeProvider>
       <AuthProvider>
         <Router>
           <Routes>
@@ -74,13 +57,23 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ChatProvider>
-                    <ChatPage />
+                    <WhatsAppMainPage />
                   </ChatProvider>
                 </ProtectedRoute>
               }
             />
             <Route
               path="/chat"
+              element={
+                <ProtectedRoute>
+                  <ChatProvider>
+                    <WhatsAppMainPage />
+                  </ChatProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/old-chat"
               element={
                 <ProtectedRoute>
                   <ChatProvider>
@@ -94,7 +87,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ChatProvider>
-                    <ChatPage />
+                    <WhatsAppMainPage />
                   </ChatProvider>
                 </ProtectedRoute>
               }

@@ -192,6 +192,132 @@ const socketHandler = (io) => {
       }
     });
 
+    // Handle editing a message
+    socket.on('edit_message', async (data) => {
+      try {
+        const { messageId, content } = data;
+
+        if (!messageId || !content || content.trim().length === 0) {
+          socket.emit('error', { message: 'Invalid edit data' });
+          return;
+        }
+
+        const message = await Message.findById(messageId);
+        if (!message) {
+          socket.emit('error', { message: 'Message not found' });
+          return;
+        }
+
+        // Check if user is the sender
+        if (message.sender.toString() !== socket.userId.toString()) {
+          socket.emit('error', { message: 'You can only edit your own messages' });
+          return;
+        }
+
+        // Check if message is too old to edit (24 hours)
+        const messageAge = Date.now() - new Date(message.createdAt).getTime();
+        const maxEditTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        if (messageAge > maxEditTime) {
+          socket.emit('error', { message: 'Message is too old to edit' });
+          return;
+        }
+
+        // Update message
+        message.content = content.trim();
+        message.edited = true;
+        message.editedAt = new Date();
+        await message.save();
+
+        await message.populate('sender', 'name email avatar');
+        if (message.replyTo) {
+          await message.populate('replyTo', 'content sender');
+        }
+
+        // Emit updated message to room members
+        io.to(message.room.toString()).emit('message_updated', {
+          message: {
+            _id: message._id,
+            sender: message.sender,
+            content: message.content,
+            room: message.room,
+            messageType: message.messageType,
+            createdAt: message.createdAt,
+            edited: message.edited,
+            editedAt: message.editedAt,
+            replyTo: message.replyTo,
+            reactions: message.reactions
+          }
+        });
+
+        console.log(`Message ${messageId} edited by ${socket.user.name}`);
+      } catch (error) {
+        console.error('Edit message error:', error);
+        socket.emit('error', { message: 'Failed to edit message' });
+      }
+    });
+
+    // Handle deleting a message
+    socket.on('delete_message', async (data) => {
+      try {
+        const { messageId } = data;
+
+        if (!messageId) {
+          socket.emit('error', { message: 'Invalid delete data' });
+          return;
+        }
+
+        const message = await Message.findById(messageId);
+        if (!message) {
+          socket.emit('error', { message: 'Message not found' });
+          return;
+        }
+
+        // Check if user is the sender
+        if (message.sender.toString() !== socket.userId.toString()) {
+          socket.emit('error', { message: 'You can only delete your own messages' });
+          return;
+        }
+
+        // Check if message is too old to delete (24 hours)
+        const messageAge = Date.now() - new Date(message.createdAt).getTime();
+        const maxDeleteTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        if (messageAge > maxDeleteTime) {
+          socket.emit('error', { message: 'Message is too old to delete' });
+          return;
+        }
+
+        // Soft delete - mark as deleted instead of removing
+        message.content = 'This message was deleted';
+        message.messageType = 'deleted';
+        message.edited = true;
+        message.editedAt = new Date();
+        await message.save();
+
+        await message.populate('sender', 'name email avatar');
+
+        // Emit updated message to room members
+        io.to(message.room.toString()).emit('message_updated', {
+          message: {
+            _id: message._id,
+            sender: message.sender,
+            content: message.content,
+            room: message.room,
+            messageType: message.messageType,
+            createdAt: message.createdAt,
+            edited: message.edited,
+            editedAt: message.editedAt,
+            replyTo: message.replyTo,
+            reactions: message.reactions
+          }
+        });
+
+        console.log(`Message ${messageId} deleted by ${socket.user.name}`);
+      } catch (error) {
+        console.error('Delete message error:', error);
+        socket.emit('error', { message: 'Failed to delete message' });
+      }
+    });
+
     // Handle user disconnect
     socket.on('disconnect', async () => {
       try {

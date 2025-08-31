@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -30,27 +30,42 @@ import { UI_CONSTANTS } from '../config/constants';
 const ChatPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const { user, logout } = useAuth();
   const { initializeSocket, loadRooms, isConnected, setCurrentRoom, currentRoom } = useChat();
   
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [startConversationOpen, setStartConversationOpen] = useState(false);
+  const hasInitialized = useRef(false);
 
   // Initialize socket and load data
   useEffect(() => {
     const initialize = async () => {
+      if (hasInitialized.current) {
+        console.log('ChatPage: Already initialized, skipping...');
+        return;
+      }
+      
+      hasInitialized.current = true;
+      
       try {
+        console.log('ChatPage: Starting socket initialization...');
+        // Small delay to ensure auth is fully complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('ChatPage: Connecting to socket...');
         await initializeSocket();
+        console.log('ChatPage: Socket connected, loading rooms...');
         await loadRooms();
+        console.log('ChatPage: Initialization complete');
       } catch (error) {
         console.error('Failed to initialize chat:', error);
+        hasInitialized.current = false; // Reset on error
       }
     };
 
     initialize();
-  }, [initializeSocket, loadRooms]);
+  }, []); // Remove dependencies to prevent infinite loop
 
   // Set current room from URL
   useEffect(() => {
@@ -71,9 +86,18 @@ const ChatPage: React.FC = () => {
     setAnchorEl(null);
   };
 
+  const handleMenuItemClick = (action: () => void) => {
+    action();
+    setAnchorEl(null);
+  };
+
   const handleLogout = () => {
     logout();
     handleProfileMenuClose();
+  };
+
+  const handleStartConversation = () => {
+    setStartConversationOpen(true);
   };
 
   if (!isConnected) {
@@ -123,10 +147,12 @@ const ChatPage: React.FC = () => {
               {user?.name}
             </Typography>
             <IconButton
+              id="profile-button"
               size="large"
               edge="end"
               aria-label="account of current user"
               aria-haspopup="true"
+              aria-controls={Boolean(anchorEl) ? 'profile-menu' : undefined}
               onClick={handleProfileMenuOpen}
               color="inherit"
             >
@@ -142,10 +168,16 @@ const ChatPage: React.FC = () => {
 
       {/* User Profile Menu */}
       <Menu
+        id="profile-menu"
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleProfileMenuClose}
-        onClick={handleProfileMenuClose}
+        disableAutoFocusItem
+        keepMounted={false}
+        MenuListProps={{
+          'aria-labelledby': 'profile-button',
+          role: 'menu',
+        }}
         PaperProps={{
           elevation: 0,
           sx: {
@@ -163,7 +195,7 @@ const ChatPage: React.FC = () => {
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <MenuItem>
+        <MenuItem disabled>
           <Avatar src={user?.avatar} />
           <Box>
             <Typography variant="body2" fontWeight="bold">
@@ -175,11 +207,11 @@ const ChatPage: React.FC = () => {
           </Box>
         </MenuItem>
         <Divider />
-        <MenuItem onClick={handleProfileMenuClose}>
+        <MenuItem onClick={() => handleMenuItemClick(() => {})}>
           <SettingsIcon fontSize="small" sx={{ mr: 2 }} />
           Settings
         </MenuItem>
-        <MenuItem onClick={handleLogout}>
+        <MenuItem onClick={() => handleMenuItemClick(handleLogout)}>
           <LogoutIcon fontSize="small" sx={{ mr: 2 }} />
           Logout
         </MenuItem>
@@ -234,7 +266,7 @@ const ChatPage: React.FC = () => {
         }}
       >
         <Toolbar />
-        <ChatArea />
+        <ChatArea onStartConversation={handleStartConversation} />
       </Box>
     </Box>
   );

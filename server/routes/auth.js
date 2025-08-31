@@ -4,6 +4,19 @@ const { generateToken } = require('../middleware/auth');
 const User = require('../models/User');
 const router = express.Router();
 
+// @route   GET /api/auth/config
+// @desc    Check auth configuration (for debugging)
+// @access  Public
+router.get('/config', (req, res) => {
+  res.json({
+    google_client_id_configured: !!process.env.GOOGLE_CLIENT_ID,
+    google_client_secret_configured: !!process.env.GOOGLE_CLIENT_SECRET,
+    jwt_secret_configured: !!process.env.JWT_SECRET,
+    client_url: process.env.CLIENT_URL || 'http://localhost:3000',
+    callback_url: '/api/auth/google/callback'
+  });
+});
+
 // @route   GET /api/auth/google
 // @desc    Initiate Google OAuth
 // @access  Public
@@ -18,25 +31,31 @@ router.get('/google',
 // @access  Public
 router.get('/google/callback',
   (req, res, next) => {
+    console.log('OAuth callback received');
     passport.authenticate('google', { session: false }, (err, user, info) => {
+      console.log('OAuth authenticate result - err:', !!err, 'user:', !!user, 'info:', info);
+      
       if (err) {
         console.error('OAuth authentication error:', err);
         const clientURL = process.env.CLIENT_URL || 'http://localhost:3000';
         
         // Handle rate limiting specifically
         if (err.message && err.message.includes('rate')) {
+          console.log('Rate limit error detected');
           return res.redirect(`${clientURL}/auth/error?error=rate_limit`);
         }
         
+        console.log('General OAuth error');
         return res.redirect(`${clientURL}/auth/error?error=oauth_failed`);
       }
       
       if (!user) {
-        console.log('No user returned from OAuth');
+        console.log('No user returned from OAuth, info:', info);
         const clientURL = process.env.CLIENT_URL || 'http://localhost:3000';
         return res.redirect(`${clientURL}/auth/error?error=no_user`);
       }
       
+      console.log('OAuth authentication successful for user:', user.name);
       req.user = user;
       next();
     })(req, res, next);
@@ -182,11 +201,68 @@ router.get('/me', passport.authenticate('jwt', { session: false }), (req, res) =
       name: req.user.name,
       email: req.user.email,
       avatar: req.user.avatar,
+      about: req.user.about,
       isOnline: req.user.isOnline,
       settings: req.user.settings,
       lastSeen: req.user.lastSeen
     }
   });
+});
+
+// @route   PUT /api/auth/profile
+// @desc    Update user profile
+// @access  Private
+router.put('/profile', passport.authenticate('jwt', { session: false }), async (req, res) => {
+  try {
+    const { name, about, avatar } = req.body;
+    const userId = req.user._id;
+
+    // Validate input
+    if (name && name.trim().length === 0) {
+      return res.status(400).json({ message: 'Name cannot be empty' });
+    }
+
+    if (name && name.length > 25) {
+      return res.status(400).json({ message: 'Name cannot exceed 25 characters' });
+    }
+
+    if (about && about.length > 139) {
+      return res.status(400).json({ message: 'About cannot exceed 139 characters' });
+    }
+
+    // Build update object
+    const updateData = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (about !== undefined) updateData.about = about.trim();
+    if (avatar !== undefined) updateData.avatar = avatar;
+
+    // Update user in database
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        about: updatedUser.about,
+        isOnline: updatedUser.isOnline,
+        settings: updatedUser.settings,
+        lastSeen: updatedUser.lastSeen
+      }
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ message: 'Server error while updating profile' });
+  }
 });
 
 module.exports = router;

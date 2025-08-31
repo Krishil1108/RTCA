@@ -10,7 +10,7 @@ export interface Message {
   };
   content: string;
   room: string;
-  messageType: 'text' | 'image' | 'file' | 'system';
+  messageType: 'text' | 'image' | 'file' | 'system' | 'deleted';
   createdAt: string;
   edited?: boolean;
   editedAt?: string;
@@ -35,7 +35,7 @@ export interface Room {
   _id: string;
   name: string;
   description: string;
-  type: 'public' | 'private';
+  type: 'direct' | 'group';
   members: Array<{
     user: {
       _id: string;
@@ -43,6 +43,7 @@ export interface Room {
       email: string;
       avatar: string;
       isOnline: boolean;
+      lastSeen?: string | Date;
     };
     role: 'admin' | 'moderator' | 'member';
     joinedAt: string;
@@ -78,9 +79,14 @@ class ChatService {
   async createRoom(roomData: {
     name: string;
     description?: string;
-    type?: 'public' | 'private';
+    type?: 'direct' | 'group';
   }): Promise<{ message: string; room: Room }> {
     const response = await api.post('/chat/rooms', roomData);
+    return response.data;
+  }
+
+  async createConversation(userEmail: string): Promise<{ room: Room }> {
+    const response = await api.post('/chat/conversation', { userEmail });
     return response.data;
   }
 

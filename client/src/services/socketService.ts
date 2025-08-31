@@ -27,36 +27,77 @@ export interface UserStatusData {
 class SocketService {
   private socket: Socket | null = null;
   private isConnected = false;
+  private connecting = false;
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
+      // If already connected, resolve immediately
+      if (this.isConnected && this.socket) {
+        resolve();
+        return;
+      }
+
+      // If already connecting, wait for current connection
+      if (this.connecting) {
+        const checkConnection = () => {
+          if (this.isConnected) {
+            resolve();
+          } else {
+            setTimeout(checkConnection, 100);
+          }
+        };
+        checkConnection();
+        return;
+      }
+
+      this.connecting = true;
       const token = localStorage.getItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
       
+      console.log('SocketService: Attempting to connect...');
+      console.log('SocketService: Token exists?', !!token);
+      console.log('SocketService: Socket URL:', SOCKET_URL);
+      
       if (!token) {
+        console.error('SocketService: No authentication token found');
+        this.connecting = false;
         reject(new Error('No authentication token found'));
         return;
       }
 
+      // Disconnect existing socket if any
+      if (this.socket) {
+        console.log('SocketService: Disconnecting existing socket');
+        this.socket.disconnect();
+      }
+
+      console.log('SocketService: Creating new socket connection...');
       this.socket = io(SOCKET_URL, {
         auth: { token },
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket'],
+        timeout: 20000,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
       });
 
       this.socket.on(SOCKET_EVENTS.CONNECT, () => {
         console.log('Connected to server');
         this.isConnected = true;
+        this.connecting = false;
         resolve();
       });
 
       this.socket.on(SOCKET_EVENTS.CONNECT_ERROR, (error) => {
         console.error('Socket connection error:', error);
         this.isConnected = false;
+        this.connecting = false;
         reject(error);
       });
 
       this.socket.on(SOCKET_EVENTS.DISCONNECT, (reason) => {
         console.log('Disconnected from server:', reason);
         this.isConnected = false;
+        this.connecting = false;
       });
 
       this.socket.on(SOCKET_EVENTS.ERROR, (error) => {
@@ -102,9 +143,32 @@ class SocketService {
     }
   }
 
+  editMessage(messageId: string, content: string): void {
+    if (this.socket) {
+      this.socket.emit('edit_message', {
+        messageId,
+        content,
+      });
+    }
+  }
+
+  deleteMessage(messageId: string): void {
+    if (this.socket) {
+      this.socket.emit('delete_message', {
+        messageId,
+      });
+    }
+  }
+
   onNewMessage(callback: (data: SocketMessage) => void): void {
     if (this.socket) {
       this.socket.on(SOCKET_EVENTS.NEW_MESSAGE, callback);
+    }
+  }
+
+  onMessageUpdated(callback: (data: SocketMessage) => void): void {
+    if (this.socket) {
+      this.socket.on('message_updated', callback);
     }
   }
 

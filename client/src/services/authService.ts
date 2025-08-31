@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email: string;
   avatar: string;
+  about?: string;
   isOnline: boolean;
   lastSeen?: Date;
   settings?: {
@@ -33,6 +34,11 @@ class AuthService {
 
   async logout(): Promise<void> {
     await api.post('/auth/logout');
+  }
+
+  async updateProfile(profileData: Partial<Pick<User, 'name' | 'about' | 'avatar'>>): Promise<{ user: User }> {
+    const response = await api.put('/auth/profile', profileData);
+    return response.data;
   }
 
   async demoLogin(): Promise<AuthResponse & { token: string }> {

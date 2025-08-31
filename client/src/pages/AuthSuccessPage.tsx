@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Typography, CircularProgress, Alert } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,9 +8,13 @@ const AuthSuccessPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login, isLoading } = useAuth();
+  const hasHandled = useRef(false);
 
   useEffect(() => {
+    if (hasHandled.current) return;
+    
     const handleAuthSuccess = async () => {
+      hasHandled.current = true;
       const token = searchParams.get('token');
       const error = searchParams.get('error');
 
@@ -41,7 +45,7 @@ const AuthSuccessPage: React.FC = () => {
     };
 
     handleAuthSuccess();
-  }, [searchParams, login, navigate]);
+  }, []);
 
   if (isLoading) {
     return <LoadingSpinner message="Authenticating..." />;

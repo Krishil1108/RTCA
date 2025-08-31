@@ -14,8 +14,8 @@ const roomSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['public', 'private'],
-    default: 'public'
+    enum: ['direct', 'group'],
+    default: 'direct'
   },
   members: [{
     user: {
@@ -104,7 +104,7 @@ roomSchema.methods.getUserRole = function(userId) {
 // Static method to get user's rooms
 roomSchema.statics.getUserRooms = function(userId) {
   return this.find({ 'members.user': userId })
-    .populate('members.user', 'name email avatar isOnline')
+    .populate('members.user', 'name email avatar isOnline lastSeen')
     .populate('lastMessage', 'content createdAt sender')
     .populate('lastMessage.sender', 'name')
     .sort({ updatedAt: -1 })

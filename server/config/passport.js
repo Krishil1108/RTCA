@@ -11,11 +11,14 @@ passport.use(new GoogleStrategy({
   callbackURL: "/api/auth/google/callback"
 }, async (accessToken, refreshToken, profile, done) => {
   try {
+    console.log('Google OAuth Strategy - Processing user:', profile.displayName, profile.emails[0]?.value);
+    
     // Check if user already exists with this Google ID
     let user = await User.findOne({ googleId: profile.id });
     let isNewUser = false;
     
     if (user) {
+      console.log('Google OAuth Strategy - Existing user found:', user.name);
       return done(null, user);
     }
     
@@ -23,6 +26,7 @@ passport.use(new GoogleStrategy({
     user = await User.findOne({ email: profile.emails[0].value });
     
     if (user) {
+      console.log('Google OAuth Strategy - Linking Google account to existing user:', user.name);
       // Link Google account to existing user
       user.googleId = profile.id;
       user.avatar = profile.photos[0]?.value || user.avatar;
@@ -30,6 +34,7 @@ passport.use(new GoogleStrategy({
       return done(null, user);
     }
     
+    console.log('Google OAuth Strategy - Creating new user');
     // Create new user
     user = new User({
       googleId: profile.id,
@@ -41,14 +46,7 @@ passport.use(new GoogleStrategy({
     await user.save();
     isNewUser = true;
     
-    // Add new user to General room
-    if (isNewUser) {
-      const Room = require('../models/Room');
-      const generalRoom = await Room.findOne({ name: 'General' });
-      if (generalRoom) {
-        await generalRoom.addMember(user._id);
-      }
-    }
+    console.log('New user created:', user.name, user.email);
     
     return done(null, user);
     

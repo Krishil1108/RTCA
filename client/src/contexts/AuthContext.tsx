@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, ReactNode } from 'react';
 import { User } from '../services/authService';
 import { LOCAL_STORAGE_KEYS } from '../config/constants';
 import authService from '../services/authService';
@@ -76,6 +76,7 @@ interface AuthContextType extends AuthState {
   login: (token: string) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
+  updateProfile: (profileData: Partial<Pick<User, 'name' | 'about' | 'avatar'>>) => Promise<void>;
   clearError: () => void;
 }
 
@@ -95,10 +96,19 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const hasCheckedAuth = useRef(false);
+  const isInitializing = useRef(false);
 
   // Check for existing token on mount
   useEffect(() => {
     const checkAuth = async () => {
+      if (hasCheckedAuth.current || isInitializing.current) {
+        return;
+      }
+      
+      isInitializing.current = true;
+      hasCheckedAuth.current = true;
+      
       console.log('AuthContext: Checking authentication...');
       dispatch({ type: 'AUTH_START' });
       
@@ -108,6 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!token) {
         console.log('AuthContext: No token, setting auth failure');
         dispatch({ type: 'AUTH_FAILURE', payload: 'No token found' });
+        isInitializing.current = false;
         return;
       }
 
@@ -122,6 +133,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
         localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_DATA);
         dispatch({ type: 'AUTH_FAILURE', payload: error.response?.data?.message || 'Authentication failed' });
+      } finally {
+        isInitializing.current = false;
       }
     };
 
@@ -174,11 +187,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     dispatch({ type: 'CLEAR_ERROR' });
   };
 
+  const updateProfile = async (profileData: Partial<Pick<User, 'name' | 'about' | 'avatar'>>) => {
+    try {
+      const response = await authService.updateProfile(profileData);
+      dispatch({ type: 'UPDATE_USER', payload: response.user });
+      
+      // Update local storage
+      localStorage.setItem(LOCAL_STORAGE_KEYS.USER_DATA, JSON.stringify(response.user));
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      throw new Error(error.response?.data?.message || 'Failed to update profile');
+    }
+  };
+
   const value: AuthContextType = {
     ...state,
     login,
     logout,
     updateUser,
+    updateProfile,
     clearError,
   };
 

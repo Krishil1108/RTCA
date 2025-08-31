@@ -18,6 +18,60 @@ router.get('/rooms', async (req, res) => {
   }
 });
 
+// @route   POST /api/chat/conversation
+// @desc    Create or get direct conversation with another user
+// @access  Private
+router.post('/conversation', [
+  body('userEmail').isEmail().withMessage('Valid email is required'),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { userEmail } = req.body;
+    const currentUserId = req.user._id;
+
+    // Find the other user
+    const otherUser = await User.findOne({ email: userEmail });
+    if (!otherUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (otherUser._id.toString() === currentUserId.toString()) {
+      return res.status(400).json({ message: 'Cannot create conversation with yourself' });
+    }
+
+    // Check if direct conversation already exists
+    let room = await Room.findOne({
+      type: 'direct',
+      'members.user': { $all: [currentUserId, otherUser._id] },
+      $expr: { $eq: [{ $size: '$members' }, 2] }
+    }).populate('members.user', 'name email avatar');
+
+    if (!room) {
+      // Create new direct conversation
+      room = new Room({
+        name: `${req.user.name} & ${otherUser.name}`,
+        type: 'direct',
+        members: [
+          { user: currentUserId, role: 'member' },
+          { user: otherUser._id, role: 'member' }
+        ],
+        createdBy: currentUserId
+      });
+      await room.save();
+      await room.populate('members.user', 'name email avatar');
+    }
+
+    res.json({ room });
+  } catch (error) {
+    console.error('Create conversation error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   GET /api/chat/rooms/:roomId/messages
 // @desc    Get messages for a specific room
 // @access  Private
@@ -156,6 +210,105 @@ router.post('/rooms/:roomId/leave', async (req, res) => {
     res.json({ message: 'Left room successfully' });
   } catch (error) {
     console.error('Leave room error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   PUT /api/chat/messages/:messageId
+// @desc    Edit a message
+// @access  Private
+router.put('/messages/:messageId', [
+  body('content')
+    .trim()
+    .isLength({ min: 1, max: 2000 })
+    .withMessage('Message content must be between 1 and 2000 characters'),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { messageId } = req.params;
+    const { content } = req.body;
+
+    // Find the message
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Check if user is the sender
+    if (message.sender.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only edit your own messages' });
+    }
+
+    // Check if message is too old to edit (24 hours)
+    const messageAge = Date.now() - new Date(message.createdAt).getTime();
+    const maxEditTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    if (messageAge > maxEditTime) {
+      return res.status(400).json({ message: 'Message is too old to edit' });
+    }
+
+    // Update message
+    message.content = content.trim();
+    message.edited = true;
+    message.editedAt = new Date();
+    await message.save();
+
+    await message.populate('sender', 'name email avatar');
+    if (message.replyTo) {
+      await message.populate('replyTo', 'content sender');
+    }
+
+    res.json({ 
+      message: 'Message updated successfully',
+      data: message 
+    });
+  } catch (error) {
+    console.error('Edit message error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/chat/messages/:messageId
+// @desc    Delete a message
+// @access  Private
+router.delete('/messages/:messageId', async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    // Find the message
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Check if user is the sender
+    if (message.sender.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only delete your own messages' });
+    }
+
+    // Check if message is too old to delete (24 hours)
+    const messageAge = Date.now() - new Date(message.createdAt).getTime();
+    const maxDeleteTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    if (messageAge > maxDeleteTime) {
+      return res.status(400).json({ message: 'Message is too old to delete' });
+    }
+
+    // Soft delete - mark as deleted instead of removing
+    message.content = 'This message was deleted';
+    message.messageType = 'deleted';
+    message.edited = true;
+    message.editedAt = new Date();
+    await message.save();
+
+    res.json({ 
+      message: 'Message deleted successfully',
+      data: message 
+    });
+  } catch (error) {
+    console.error('Delete message error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

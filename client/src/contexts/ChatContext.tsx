@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
 import { Room, Message } from '../services/chatService';
 import { TypingData, UserStatusData } from '../services/socketService';
 import socketService from '../services/socketService';
@@ -127,10 +127,12 @@ interface ChatContextType extends ChatState {
   loadRooms: () => Promise<void>;
   loadMessages: (roomId: string) => Promise<void>;
   sendMessage: (content: string, messageType?: string, replyTo?: string) => void;
+  editMessage: (messageId: string, content: string) => void;
+  deleteMessage: (messageId: string) => void;
   joinRoom: (roomId: string) => void;
   leaveRoom: (roomId: string) => void;
   setCurrentRoom: (roomId: string | null) => void;
-  createRoom: (roomData: { name: string; description?: string; type?: 'public' | 'private' }) => Promise<void>;
+  createRoom: (roomData: { name: string; description?: string; type?: 'direct' | 'group' }) => Promise<void>;
   setTyping: (isTyping: boolean) => void;
   addReaction: (messageId: string, emoji: string) => void;
   removeReaction: (messageId: string) => void;
@@ -178,6 +180,14 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     socketService.onNewMessage((data) => {
       dispatch({
         type: 'ADD_MESSAGE',
+        payload: { roomId: data.message.room, message: data.message },
+      });
+    });
+
+    // Message updated (edit/delete)
+    socketService.onMessageUpdated((data) => {
+      dispatch({
+        type: 'UPDATE_MESSAGE',
         payload: { roomId: data.message.room, message: data.message },
       });
     });
@@ -333,6 +343,16 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     socketService.removeReaction(messageId);
   };
 
+  // Edit message
+  const editMessage = useCallback((messageId: string, content: string) => {
+    socketService.editMessage(messageId, content);
+  }, []);
+
+  // Delete message
+  const deleteMessage = useCallback((messageId: string) => {
+    socketService.deleteMessage(messageId);
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -348,6 +368,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     loadRooms,
     loadMessages,
     sendMessage,
+    editMessage,
+    deleteMessage,
     joinRoom,
     leaveRoom,
     setCurrentRoom,

@@ -7,304 +7,160 @@ import {
   ListItemIcon,
   ListItemText,
   Typography,
-  Badge,
   Avatar,
   Fab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
   Divider,
   Toolbar,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Group as GroupIcon,
-  Public as PublicIcon,
-  Lock as PrivateIcon,
-  Tag as TagIcon,
+  Chat as ChatIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { useChat } from '../contexts/ChatContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Room } from '../services/chatService';
+import StartConversation from './StartConversation';
 
 interface SidebarProps {
   onRoomSelect?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onRoomSelect }) => {
-  const { rooms, currentRoom, joinRoom, createRoom, isLoading } = useChat();
-  const [createRoomOpen, setCreateRoomOpen] = useState(false);
-  const [newRoomName, setNewRoomName] = useState('');
-  const [newRoomDescription, setNewRoomDescription] = useState('');
-  const [newRoomType, setNewRoomType] = useState<'public' | 'private'>('public');
-  const [createRoomLoading, setCreateRoomLoading] = useState(false);
+  const { rooms, currentRoom, joinRoom, loadRooms, isLoading } = useChat();
+  const { user } = useAuth();
+  const [startConversationOpen, setStartConversationOpen] = useState(false);
 
   const handleRoomSelect = (roomId: string) => {
     joinRoom(roomId);
-    onRoomSelect?.();
-  };
-
-  const handleCreateRoom = async () => {
-    if (!newRoomName.trim()) return;
-
-    setCreateRoomLoading(true);
-    try {
-      await createRoom({
-        name: newRoomName.trim(),
-        description: newRoomDescription.trim(),
-        type: newRoomType,
-      });
-      setCreateRoomOpen(false);
-      setNewRoomName('');
-      setNewRoomDescription('');
-      setNewRoomType('public');
-    } catch (error) {
-      console.error('Failed to create room:', error);
-    } finally {
-      setCreateRoomLoading(false);
+    if (onRoomSelect) {
+      onRoomSelect();
     }
   };
 
-  const formatLastMessageTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
+  const handleConversationCreated = async (roomId: string) => {
+    await loadRooms(); // Refresh the rooms list
+    joinRoom(roomId); // Join the new conversation
+    if (onRoomSelect) {
+      onRoomSelect();
+    }
+  };
 
-    if (diffMins < 1) return 'now';
-    if (diffMins < 60) return `${diffMins}m`;
-    if (diffHours < 24) return `${diffHours}h`;
-    if (diffDays < 7) return `${diffDays}d`;
-    return date.toLocaleDateString();
+  const getConversationName = (room: Room) => {
+    if (room.type === 'direct') {
+      // For direct conversations, show the other person's name
+      const otherMember = room.members.find(member => member.user._id !== user?.id);
+      return otherMember?.user.name || 'Unknown User';
+    }
+    return room.name;
+  };
+
+  const getConversationAvatar = (room: Room) => {
+    if (room.type === 'direct' && room.members.length === 2) {
+      // Show the other person's avatar
+      const otherMember = room.members.find(member => member.user._id !== user?.id);
+      return otherMember?.user.avatar || null;
+    }
+    return null;
+  };
+
+  const getLastSeen = (room: Room) => {
+    if (room.type === 'direct' && room.members.length === 2) {
+      const otherMember = room.members.find(member => member.user._id !== user?.id);
+      return otherMember?.user.isOnline ? 'Online' : 'Offline';
+    }
+    return '';
   };
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Toolbar />
+      <Toolbar>
+        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          Conversations
+        </Typography>
+        <Fab
+          size="small"
+          color="primary"
+          onClick={() => setStartConversationOpen(true)}
+          sx={{ ml: 1 }}
+        >
+          <AddIcon />
+        </Fab>
+      </Toolbar>
       
-      {/* Header */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="h6" gutterBottom>
-          Chat Rooms
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          {rooms.length} room{rooms.length !== 1 ? 's' : ''} available
-        </Typography>
-      </Box>
-
-      {/* Rooms List */}
+      <Divider />
+      
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
         {isLoading ? (
           <Box sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="textSecondary">
-              Loading rooms...
+            <Typography variant="body2" color="text.secondary">
+              Loading conversations...
             </Typography>
           </Box>
         ) : rooms.length === 0 ? (
           <Box sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="textSecondary" gutterBottom>
-              No rooms yet
+            <ChatIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              No conversations yet
             </Typography>
-            <Typography variant="caption" color="textSecondary">
-              Create your first room to get started!
+            <Typography variant="caption" color="text.secondary">
+              Click the + button to start your first conversation with a friend
             </Typography>
           </Box>
         ) : (
-          <List sx={{ py: 0 }}>
-            {rooms.map((room: Room) => {
-              const isSelected = room._id === currentRoom;
-              const hasUnreadMessages = false; // TODO: Implement unread count
-              
-              return (
-                <ListItem key={room._id} disablePadding>
-                  <ListItemButton
-                    selected={isSelected}
-                    onClick={() => handleRoomSelect(room._id)}
-                    sx={{
-                      borderRadius: 1,
-                      mx: 1,
-                      my: 0.25,
-                      '&.Mui-selected': {
-                        backgroundColor: 'primary.main',
-                        color: 'primary.contrastText',
-                        '&:hover': {
-                          backgroundColor: 'primary.dark',
-                        },
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 40 }}>
-                      {room.type === 'private' ? (
-                        <PrivateIcon 
-                          fontSize="small" 
-                          color={isSelected ? 'inherit' : 'action'}
-                        />
-                      ) : (
-                        <PublicIcon 
-                          fontSize="small" 
-                          color={isSelected ? 'inherit' : 'action'}
-                        />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              fontWeight: hasUnreadMessages ? 'bold' : 'normal',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              flex: 1,
-                            }}
-                          >
-                            {room.name}
-                          </Typography>
-                          {hasUnreadMessages && (
-                            <Badge
-                              color="error"
-                              variant="dot"
-                              sx={{ '& .MuiBadge-badge': { right: -6, top: 6 } }}
-                            />
-                          )}
-                        </Box>
-                      }
-                      secondary={
-                        room.lastMessage ? (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                flex: 1,
-                                opacity: isSelected ? 0.8 : 0.7,
-                              }}
-                            >
-                              {room.lastMessage.sender?.name}: {room.lastMessage.content}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                opacity: isSelected ? 0.8 : 0.6,
-                                fontSize: '0.7rem',
-                              }}
-                            >
-                              {formatLastMessageTime(room.lastMessage.createdAt)}
-                            </Typography>
-                          </Box>
+          <List>
+            {rooms.map((room: Room) => (
+              <ListItem key={room._id} disablePadding>
+                <ListItemButton
+                  selected={currentRoom === room._id}
+                  onClick={() => handleRoomSelect(room._id)}
+                  sx={{
+                    borderRadius: 1,
+                    mx: 1,
+                    mb: 0.5,
+                  }}
+                >
+                  <ListItemIcon>
+                    {getConversationAvatar(room) ? (
+                      <Avatar
+                        src={getConversationAvatar(room) || undefined}
+                        sx={{ width: 40, height: 40 }}
+                      />
+                    ) : (
+                      <Avatar sx={{ width: 40, height: 40 }}>
+                        {room.type === 'direct' ? (
+                          <PersonIcon />
                         ) : (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              opacity: isSelected ? 0.8 : 0.6,
-                            }}
-                          >
-                            No messages yet
-                          </Typography>
-                        )
-                      }
-                    />
-                  </ListItemButton>
-                </ListItem>
-              );
-            })}
+                          <ChatIcon />
+                        )}
+                      </Avatar>
+                    )}
+                  </ListItemIcon>
+                  
+                  <ListItemText
+                    primary={
+                      <Typography variant="subtitle2" noWrap>
+                        {getConversationName(room)}
+                      </Typography>
+                    }
+                    secondary={
+                      <Typography variant="caption" color="text.secondary">
+                        {getLastSeen(room)}
+                      </Typography>
+                    }
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
           </List>
         )}
       </Box>
 
-      {/* Create Room FAB */}
-      <Box sx={{ p: 2 }}>
-        <Fab
-          color="primary"
-          aria-label="create room"
-          onClick={() => setCreateRoomOpen(true)}
-          size="medium"
-          sx={{ width: '100%', borderRadius: 2 }}
-        >
-          <AddIcon sx={{ mr: 1 }} />
-          New Room
-        </Fab>
-      </Box>
-
-      {/* Create Room Dialog */}
-      <Dialog
-        open={createRoomOpen}
-        onClose={() => setCreateRoomOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Create New Room</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Room Name"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={newRoomName}
-            onChange={(e) => setNewRoomName(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            label="Description (optional)"
-            type="text"
-            fullWidth
-            variant="outlined"
-            multiline
-            rows={2}
-            value={newRoomDescription}
-            onChange={(e) => setNewRoomDescription(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <FormControl fullWidth>
-            <InputLabel>Room Type</InputLabel>
-            <Select
-              value={newRoomType}
-              label="Room Type"
-              onChange={(e) => setNewRoomType(e.target.value as 'public' | 'private')}
-            >
-              <MenuItem value="public">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PublicIcon fontSize="small" />
-                  Public - Anyone can join
-                </Box>
-              </MenuItem>
-              <MenuItem value="private">
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PrivateIcon fontSize="small" />
-                  Private - Invite only
-                </Box>
-              </MenuItem>
-            </Select>
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateRoomOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateRoom}
-            variant="contained"
-            disabled={!newRoomName.trim() || createRoomLoading}
-          >
-            {createRoomLoading ? 'Creating...' : 'Create Room'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <StartConversation
+        open={startConversationOpen}
+        onClose={() => setStartConversationOpen(false)}
+        onConversationCreated={handleConversationCreated}
+      />
     </Box>
   );
 };
