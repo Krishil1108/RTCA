@@ -9,12 +9,26 @@ import {
   Avatar,
   Typography,
   Fab,
+  Badge,
+  Chip,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Divider,
+  Fade,
+  Slide,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   Chat as ChatIcon,
   Person as PersonIcon,
+  Search as SearchIcon,
+  MoreVert as MoreVertIcon,
+  PushPin as PushPinIcon,
+  Group as GroupIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useWhatsAppTheme } from '../contexts/ThemeContext';
@@ -31,6 +45,7 @@ const WhatsAppChatList: React.FC<WhatsAppChatListProps> = ({ onChatSelect }) => 
   const theme = useTheme();
   const { isDarkMode } = useWhatsAppTheme();
   const [startConversationOpen, setStartConversationOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleConversationCreated = async (roomId: string) => {
     await loadRooms();
@@ -60,7 +75,7 @@ const WhatsAppChatList: React.FC<WhatsAppChatListProps> = ({ onChatSelect }) => 
 
   const getLastMessagePreview = () => {
     // For now, return a placeholder. Later you can implement actual last message
-    return "Tap to chat";
+    return "Tap to start chatting";
   };
 
   const getOtherUserStatus = (room: Room) => {
@@ -84,11 +99,23 @@ const WhatsAppChatList: React.FC<WhatsAppChatListProps> = ({ onChatSelect }) => 
     return '';
   };
 
+  const isUserOnline = (room: Room) => {
+    if (room.type === 'direct') {
+      const otherMember = room.members.find(member => member.user._id !== user?.id);
+      return otherMember?.user.isOnline || false;
+    }
+    return false;
+  };
+
+  const filteredRooms = rooms.filter(room =>
+    getContactName(room).toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (isLoading) {
     return (
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="body2" sx={{ color: isDarkMode ? '#8696a0' : 'text.secondary' }}>
-          Loading chats...
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          Loading conversations...
         </Typography>
       </Box>
     );
@@ -97,143 +124,290 @@ const WhatsAppChatList: React.FC<WhatsAppChatListProps> = ({ onChatSelect }) => 
   return (
     <Box sx={{ 
       height: '100%', 
-      bgcolor: isDarkMode ? '#111b21' : '#ffffff', 
-      color: isDarkMode ? '#e9edef' : '#000',
-      position: 'relative' 
+      bgcolor: isDarkMode ? '#111b21' : '#f8f9fa',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative'
     }}>
-      {rooms.length === 0 ? (
+      {/* Search Bar */}
+      <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+        <TextField
+          fullWidth
+          placeholder="Search conversations..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          size="small"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+              </InputAdornment>
+            ),
+            sx: {
+              borderRadius: 3,
+              bgcolor: isDarkMode ? alpha(theme.palette.common.white, 0.05) : alpha(theme.palette.common.black, 0.05),
+              '& .MuiOutlinedInput-notchedOutline': {
+                border: 'none',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                border: 'none',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                border: `2px solid ${theme.palette.primary.main}`,
+              },
+            },
+          }}
+        />
+      </Box>
+
+      {/* Quick Actions */}
+      <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Chip 
+            label="All" 
+            size="small" 
+            color="primary" 
+            sx={{ borderRadius: 2 }}
+          />
+          <Chip 
+            label="Unread" 
+            size="small" 
+            variant="outlined" 
+            sx={{ borderRadius: 2 }}
+          />
+          <Chip 
+            label="Groups" 
+            size="small" 
+            variant="outlined" 
+            sx={{ borderRadius: 2 }}
+          />
+        </Box>
+      </Box>
+
+      {filteredRooms.length === 0 ? (
         <Box 
           sx={{ 
             display: 'flex', 
             flexDirection: 'column', 
             alignItems: 'center', 
             justifyContent: 'center',
-            height: '40vh',
+            flex: 1,
             px: 4,
             textAlign: 'center',
-            mt: 8,
           }}
         >
-          <ChatIcon sx={{ fontSize: 60, color: isDarkMode ? '#3b4a54' : '#e0e0e0', mb: 2 }} />
-          <Typography variant="h6" sx={{ color: isDarkMode ? '#e9edef' : 'text.secondary' }} gutterBottom>
-            No chats yet
-          </Typography>
-          <Typography variant="body2" sx={{ color: isDarkMode ? '#8696a0' : 'text.secondary', mb: 3 }}>
-            Start a conversation by tapping the + button
-          </Typography>
+          <Fade in timeout={500}>
+            <Box>
+              <ChatIcon sx={{ 
+                fontSize: 80, 
+                color: alpha(theme.palette.primary.main, 0.3), 
+                mb: 2 
+              }} />
+              <Typography variant="h6" color="text.primary" gutterBottom>
+                {searchQuery ? 'No results found' : 'No conversations yet'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {searchQuery 
+                  ? 'Try searching with different keywords'
+                  : 'Start a new conversation to begin chatting'
+                }
+              </Typography>
+              {!searchQuery && (
+                <Fade in timeout={1000}>
+                  <Chip
+                    label="Start New Chat"
+                    onClick={() => setStartConversationOpen(true)}
+                    sx={{
+                      bgcolor: theme.palette.primary.main,
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: theme.palette.primary.dark,
+                      },
+                    }}
+                  />
+                </Fade>
+              )}
+            </Box>
+          </Fade>
         </Box>
       ) : (
-        <List sx={{ p: 0 }}>
-          {rooms.map((room: Room) => (
-            <ListItem key={room._id} disablePadding>
-              <ListItemButton 
-                onClick={() => onChatSelect(room._id)}
-                sx={{
-                  py: 1.5,
-                  px: 2,
-                  '&:hover': {
-                    bgcolor: '#f5f5f5',
-                  },
-                }}
+        <List sx={{ flex: 1, overflow: 'auto', py: 0 }}>
+          {filteredRooms.map((room, index) => {
+            const contactName = getContactName(room);
+            const contactAvatar = getContactAvatar(room);
+            const lastMessageTime = getLastMessageTime();
+            const lastMessagePreview = getLastMessagePreview();
+            const otherUserStatus = getOtherUserStatus(room);
+            const isOnline = isUserOnline(room);
+
+            return (
+              <Slide
+                key={room._id}
+                direction="right"
+                in
+                timeout={300 + index * 100}
               >
-                <ListItemAvatar>
-                  {getContactAvatar(room) ? (
-                    <Avatar 
-                      src={getContactAvatar(room) || undefined}
-                      sx={{ width: 50, height: 50 }}
+                <ListItem
+                  disablePadding
+                  sx={{
+                    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    },
+                  }}
+                >
+                  <ListItemButton
+                    onClick={() => onChatSelect(room._id)}
+                    sx={{
+                      py: 2,
+                      px: 2,
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        bgcolor: 'transparent',
+                      },
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Badge
+                        overlap="circular"
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                        variant="dot"
+                        sx={{
+                          '& .MuiBadge-dot': {
+                            backgroundColor: isOnline ? '#4caf50' : 'transparent',
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            border: `2px solid ${theme.palette.background.paper}`,
+                          },
+                        }}
+                      >
+                        <Avatar
+                          src={contactAvatar || undefined}
+                          sx={{
+                            width: 50,
+                            height: 50,
+                            bgcolor: room.type === 'group' ? theme.palette.secondary.main : theme.palette.primary.main,
+                            fontSize: '1.2rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {room.type === 'group' ? (
+                            <GroupIcon />
+                          ) : (
+                            contactName.charAt(0).toUpperCase()
+                          )}
+                        </Avatar>
+                      </Badge>
+                    </ListItemAvatar>
+                    
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography
+                            variant="subtitle1"
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: '1rem',
+                              color: 'text.primary',
+                            }}
+                          >
+                            {contactName}
+                          </Typography>
+                          {room.type === 'group' && (
+                            <GroupIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          )}
+                          {isOnline && (
+                            <CheckCircleIcon sx={{ fontSize: 16, color: '#4caf50' }} />
+                          )}
+                        </Box>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: '0.875rem',
+                              mb: 0.5,
+                            }}
+                          >
+                            {lastMessagePreview}
+                          </Typography>
+                          {otherUserStatus && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: isOnline ? '#4caf50' : 'text.secondary',
+                                fontSize: '0.75rem',
+                                fontWeight: isOnline ? 600 : 400,
+                              }}
+                            >
+                              {isOnline ? 'Online' : otherUserStatus}
+                            </Typography>
+                          )}
+                        </Box>
+                      }
                     />
-                  ) : (
-                    <Avatar sx={{ width: 50, height: 50, bgcolor: '#128c7e' }}>
-                      <PersonIcon />
-                    </Avatar>
-                  )}
-                </ListItemAvatar>
-                
-                <ListItemText
-                  primary={
-                    <Typography 
-                      variant="subtitle1" 
-                      sx={{ 
-                        fontWeight: 500,
-                        fontSize: '1rem',
-                        color: isDarkMode ? '#e9edef' : '#000000',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <span>{getContactName(room)}</span>
-                      <Typography 
-                        component="span"
-                        variant="caption" 
-                        sx={{ 
-                          color: isDarkMode ? '#8696a0' : '#667781',
+                    
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'text.secondary',
                           fontSize: '0.75rem',
                         }}
                       >
-                        {getLastMessageTime()}
+                        {lastMessageTime}
                       </Typography>
-                    </Typography>
-                  }
-                  secondary={
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: isDarkMode ? '#8696a0' : '#667781',
-                        fontSize: '0.875rem',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        maxWidth: '200px',
-                        mt: 0.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                      }}
-                    >
-                      {room.type === 'direct' ? (
-                        <>
-                          {getOtherUserStatus(room) === 'online' && (
-                            <Box sx={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              bgcolor: '#25d366',
-                              flexShrink: 0
-                            }} />
-                          )}
-                          {getOtherUserStatus(room) || 'Tap to chat'}
-                        </>
-                      ) : (
-                        getLastMessagePreview()
+                      
+                      {/* Unread messages badge */}
+                      <Badge
+                        badgeContent={Math.floor(Math.random() * 5) + 1}
+                        color="primary"
+                        sx={{
+                          '& .MuiBadge-badge': {
+                            fontSize: '0.75rem',
+                            height: 20,
+                            minWidth: 20,
+                          },
+                        }}
+                      />
+                      
+                      {/* Pinned indicator */}
+                      {index === 0 && (
+                        <PushPinIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                       )}
-                    </Typography>
-                  }
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
+                    </Box>
+                  </ListItemButton>
+                </ListItem>
+              </Slide>
+            );
+          })}
         </List>
       )}
 
-      {/* Floating Action Button for New Chat */}
+      {/* Floating Action Button */}
       <Fab
         color="primary"
-        sx={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          bgcolor: theme.palette.primary.main,
-          '&:hover': {
-            bgcolor: theme.palette.primary.dark,
-          },
-          zIndex: 1000,
-        }}
         onClick={() => setStartConversationOpen(true)}
+        sx={{
+          position: 'absolute',
+          bottom: 20,
+          right: 20,
+          background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+          '&:hover': {
+            background: `linear-gradient(45deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+            transform: 'scale(1.1)',
+          },
+          transition: 'all 0.3s ease',
+          boxShadow: theme.shadows[8],
+        }}
       >
         <ChatIcon />
       </Fab>
 
+      {/* Start Conversation Dialog */}
       <StartConversation
         open={startConversationOpen}
         onClose={() => setStartConversationOpen(false)}

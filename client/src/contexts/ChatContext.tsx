@@ -155,27 +155,8 @@ interface ChatProviderProps {
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
 
-  // Initialize socket connection
-  const initializeSocket = async () => {
-    try {
-      await socketService.connect();
-      dispatch({ type: 'SET_CONNECTED', payload: true });
-      setupSocketListeners();
-    } catch (error: any) {
-      console.error('Socket connection failed:', error);
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to connect to server' });
-      dispatch({ type: 'SET_CONNECTED', payload: false });
-    }
-  };
-
-  // Disconnect socket
-  const disconnectSocket = () => {
-    socketService.disconnect();
-    dispatch({ type: 'SET_CONNECTED', payload: false });
-  };
-
   // Set up socket event listeners
-  const setupSocketListeners = () => {
+  const setupSocketListeners = useCallback(() => {
     // New message
     socketService.onNewMessage((data) => {
       dispatch({
@@ -249,10 +230,29 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         }
       }
     });
+  }, [state.typingUsers, state.currentRoom, state.messages]);
+
+  // Initialize socket connection
+  const initializeSocket = useCallback(async () => {
+    try {
+      await socketService.connect();
+      dispatch({ type: 'SET_CONNECTED', payload: true });
+      setupSocketListeners();
+    } catch (error: any) {
+      console.error('Socket connection failed:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to connect to server' });
+      dispatch({ type: 'SET_CONNECTED', payload: false });
+    }
+  }, [setupSocketListeners]);
+
+  // Disconnect socket
+  const disconnectSocket = () => {
+    socketService.disconnect();
+    dispatch({ type: 'SET_CONNECTED', payload: false });
   };
 
   // Load user's rooms
-  const loadRooms = async () => {
+  const loadRooms = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const response = await chatService.getRooms();
@@ -264,7 +264,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, []);
 
   // Load messages for a room
   const loadMessages = async (roomId: string) => {
@@ -295,13 +295,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   };
 
   // Leave room
-  const leaveRoom = (roomId: string) => {
+  const leaveRoom = useCallback((roomId: string) => {
     socketService.leaveRoom(roomId);
     if (state.currentRoom === roomId) {
       setCurrentRoom(null);
     }
     dispatch({ type: 'CLEAR_MESSAGES', payload: roomId });
-  };
+  }, [state.currentRoom]);
 
   // Set current room
   const setCurrentRoom = (roomId: string | null) => {
@@ -312,7 +312,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const createRoom = async (roomData: {
     name: string;
     description?: string;
-    type?: 'public' | 'private';
+    type?: 'direct' | 'group';
   }) => {
     try {
       const response = await chatService.createRoom(roomData);

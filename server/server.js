@@ -48,14 +48,14 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rtca-chat
 // Security middleware
 app.use(helmet());
 
-// Rate limiting (exclude demo route for development)
+// Rate limiting (more lenient in development)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Much higher limit in development
   message: 'Too many requests from this IP, please try again later.',
   skip: (req) => {
-    // Skip rate limiting for demo route in development
-    if (process.env.NODE_ENV === 'development' && req.path === '/api/auth/demo') {
+    // Skip rate limiting entirely in development
+    if (process.env.NODE_ENV === 'development') {
       return true;
     }
     return false;

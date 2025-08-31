@@ -8,13 +8,24 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  Fade,
+  Slide,
+  useTheme,
+  alpha,
 } from '@mui/material';
-import { Google as GoogleIcon, Chat as ChatIcon } from '@mui/icons-material';
+import { 
+  Google as GoogleIcon, 
+  Chat as ChatIcon, 
+  Security as SecurityIcon,
+  Speed as SpeedIcon,
+  Group as GroupIcon,
+} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import authService from '../services/authService';
 
 const Login: React.FC = () => {
   const { login } = useAuth();
+  const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
@@ -36,83 +47,236 @@ const Login: React.FC = () => {
     }
   };
 
+  const features = [
+    { icon: <SpeedIcon />, title: 'Real-time Messaging', desc: 'Instant message delivery' },
+    { icon: <SecurityIcon />, title: 'Secure Authentication', desc: 'Google OAuth & JWT security' },
+    { icon: <GroupIcon />, title: 'Group Chats', desc: 'Create and manage group conversations' },
+  ];
+
   return (
-    <Container component="main" maxWidth="sm">
+    <Container component="main" maxWidth="lg">
       <Box
         sx={{
-          marginTop: 8,
+          minHeight: '100vh',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
+          py: 4,
         }}
       >
-        <Paper
-          elevation={3}
+        <Box
           sx={{
-            padding: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 4,
             width: '100%',
+            alignItems: 'center',
           }}
         >
-          <Box sx={{ mb: 3 }}>
-            <ChatIcon sx={{ fontSize: 60, color: 'primary.main' }} />
-          </Box>
-          
-          <Typography component="h1" variant="h4" gutterBottom>
-            Welcome to RTCA
-          </Typography>
-          
-          <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
-            Real-time chat application with secure authentication
-          </Typography>
+          {/* Left side - Features */}
+          <Fade in timeout={800}>
+            <Box sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+              <Typography
+                variant="h2"
+                component="h1"
+                sx={{
+                  fontWeight: 800,
+                  background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  mb: 2,
+                  fontSize: { xs: '2.5rem', md: '3.5rem' },
+                }}
+              >
+                RTCA Chat
+              </Typography>
+              
+              <Typography
+                variant="h5"
+                color="text.secondary"
+                sx={{ mb: 4, fontWeight: 300 }}
+              >
+                Connect, communicate, and collaborate in real-time
+              </Typography>
 
-          {error && (
-            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+                {features.map((feature, index) => (
+                  <Slide
+                    key={index}
+                    direction="right"
+                    in
+                    timeout={1000 + index * 200}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        p: 2,
+                        borderRadius: 2,
+                        background: alpha(theme.palette.primary.main, 0.05),
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          color: theme.palette.primary.main,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        {feature.icon}
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {feature.title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {feature.desc}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Slide>
+                ))}
+              </Box>
+            </Box>
+          </Fade>
 
-          <Button
-            fullWidth
-            variant="contained"
-            startIcon={<GoogleIcon />}
-            onClick={handleGoogleLogin}
-            sx={{ mb: 2 }}
-            size="large"
-          >
-            Sign in with Google
-          </Button>
+          {/* Right side - Login Form */}
+          <Slide direction="left" in timeout={1000}>
+            <Paper
+              elevation={24}
+              sx={{
+                padding: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                borderRadius: 3,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.paper, 0.95)})`,
+                backdropFilter: 'blur(10px)',
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              }}
+            >
+              <Box
+                sx={{
+                  mb: 3,
+                  p: 2,
+                  borderRadius: '50%',
+                  background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ChatIcon sx={{ fontSize: 40, color: 'white' }} />
+              </Box>
+              
+              <Typography
+                component="h2"
+                variant="h4"
+                gutterBottom
+                sx={{ fontWeight: 600 }}
+              >
+                Welcome Back
+              </Typography>
+              
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                align="center"
+                sx={{ mb: 4, maxWidth: 300 }}
+              >
+                Sign in to continue your conversations and connect with your team
+              </Typography>
 
-          <Divider sx={{ width: '100%', my: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              OR
-            </Typography>
-          </Divider>
+              {error && (
+                <Fade in>
+                  <Alert
+                    severity="error"
+                    sx={{
+                      width: '100%',
+                      mb: 2,
+                      borderRadius: 2,
+                    }}
+                  >
+                    {error}
+                  </Alert>
+                </Fade>
+              )}
 
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={handleDemoLogin}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : <ChatIcon />}
-            sx={{ mb: 2 }}
-            size="large"
-          >
-            {loading ? 'Connecting...' : 'Try Demo Mode'}
-          </Button>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<GoogleIcon />}
+                onClick={handleGoogleLogin}
+                sx={{
+                  mb: 2,
+                  py: 1.5,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                  '&:hover': {
+                    background: `linear-gradient(45deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                    transform: 'translateY(-2px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+                size="large"
+              >
+                Continue with Google
+              </Button>
 
-          <Typography variant="caption" color="text.secondary" align="center" sx={{ mt: 2 }}>
-            Demo mode creates a temporary account for testing purposes
-          </Typography>
-        </Paper>
+              <Divider sx={{ width: '100%', my: 2 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    px: 2,
+                    background: theme.palette.background.paper,
+                  }}
+                >
+                  OR
+                </Typography>
+              </Divider>
 
-        <Box sx={{ mt: 4, p: 2, bgcolor: 'info.main', borderRadius: 1 }}>
-          <Typography variant="body2" color="white" align="center">
-            <strong>Note:</strong> To use Google OAuth, you need to set up Google Cloud credentials.
-            See <code>GOOGLE_OAUTH_SETUP.md</code> for instructions.
-          </Typography>
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={handleDemoLogin}
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={20} /> : <ChatIcon />}
+                sx={{
+                  py: 1.5,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  borderWidth: 2,
+                  '&:hover': {
+                    borderWidth: 2,
+                    transform: 'translateY(-2px)',
+                    boxShadow: theme.shadows[4],
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+                size="large"
+              >
+                {loading ? 'Connecting...' : 'Try Demo Account'}
+              </Button>
+
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                align="center"
+                sx={{ mt: 3, px: 2 }}
+              >
+                By signing in, you agree to our Terms of Service and Privacy Policy
+              </Typography>
+            </Paper>
+          </Slide>
         </Box>
       </Box>
     </Container>

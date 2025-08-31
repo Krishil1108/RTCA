@@ -4,7 +4,7 @@ import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const DebugPanel: React.FC = () => {
-  const { rooms, isConnected, isLoading, error, currentRoom, initializeSocket, loadRooms } = useChat();
+  const { rooms, isConnected, error, currentRoom, initializeSocket, loadRooms } = useChat();
   const { user, isAuthenticated } = useAuth();
 
   return (
@@ -21,10 +21,6 @@ const DebugPanel: React.FC = () => {
       
       <Typography variant="body2">
         <strong>Socket Connected:</strong> {isConnected ? 'Yes' : 'No'}
-      </Typography>
-      
-      <Typography variant="body2">
-        <strong>Loading:</strong> {isLoading ? 'Yes' : 'No'}
       </Typography>
       
       <Typography variant="body2">

@@ -119,8 +119,8 @@ router.post('/rooms', [
     .withMessage('Description must be less than 200 characters'),
   body('type')
     .optional()
-    .isIn(['public', 'private'])
-    .withMessage('Type must be public or private')
+    .isIn(['direct', 'group'])
+    .withMessage('Type must be direct or group')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -128,7 +128,7 @@ router.post('/rooms', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, description, type = 'public' } = req.body;
+    const { name, description, type = 'group' } = req.body;
 
     // Check if room with same name exists
     const existingRoom = await Room.findOne({ name });

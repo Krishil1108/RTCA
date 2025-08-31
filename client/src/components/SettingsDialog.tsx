@@ -16,6 +16,14 @@ import {
   Typography,
   IconButton,
   Box,
+  Avatar,
+  Card,
+  CardContent,
+  Slide,
+  Fade,
+  useTheme,
+  alpha,
+  Chip,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -25,6 +33,11 @@ import {
   Security as PrivacyIcon,
   Storage as DataIcon,
   Help as HelpIcon,
+  Person as PersonIcon,
+  ChevronRight as ChevronRightIcon,
+  Brightness4 as Brightness4Icon,
+  Brightness7 as Brightness7Icon,
+  BrightnessAuto as BrightnessAutoIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useWhatsAppTheme } from '../contexts/ThemeContext';
@@ -37,7 +50,8 @@ interface SettingsDialogProps {
 
 const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
   const { user } = useAuth();
-  const { themeMode } = useWhatsAppTheme();
+  const { themeMode, isDarkMode } = useWhatsAppTheme();
+  const theme = useTheme();
   const [notifications, setNotifications] = useState(user?.settings?.notifications ?? true);
   const [soundEnabled, setSoundEnabled] = useState(user?.settings?.soundEnabled ?? true);
   const [themeDialogOpen, setThemeDialogOpen] = useState(false);
@@ -49,9 +63,22 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
       case 'dark':
         return 'Dark';
       case 'auto':
-        return 'System default';
+        return 'System Default';
       default:
-        return 'Light';
+        return 'System Default';
+    }
+  };
+
+  const getThemeIcon = () => {
+    switch (themeMode) {
+      case 'light':
+        return <Brightness7Icon />;
+      case 'dark':
+        return <Brightness4Icon />;
+      case 'auto':
+        return <BrightnessAutoIcon />;
+      default:
+        return <BrightnessAutoIcon />;
     }
   };
 

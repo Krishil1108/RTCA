@@ -7,11 +7,26 @@ import {
   IconButton,
   Avatar,
   Chip,
+  Fade,
+  Slide,
+  useTheme,
+  alpha,
+  Zoom,
+  Tooltip,
+  Divider,
 } from '@mui/material';
 import {
   Send as SendIcon,
   MoreVert as MoreIcon,
   Close as CloseIcon,
+  AttachFile as AttachFileIcon,
+  EmojiEmotions as EmojiIcon,
+  Mic as MicIcon,
+  ArrowBack as ArrowBackIcon,
+  Phone as PhoneIcon,
+  VideoCall as VideoCallIcon,
+  Group as GroupIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,6 +53,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
 
   const { user } = useAuth();
   const { isDarkMode } = useWhatsAppTheme();
+  const theme = useTheme();
 
   const [messageInput, setMessageInput] = useState('');
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
@@ -89,52 +105,35 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
       sendMessage(messageInput.trim(), 'text', replyingTo?._id);
       setMessageInput('');
       setReplyingTo(null);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.length <= UI_CONSTANTS.MAX_MESSAGE_LENGTH) {
+      setMessageInput(value);
+    }
+
+    // Handle typing indicator
+    if (currentRoom) {
+      setTyping(true);
       
-      // Clear typing indicator
-      setTyping(false);
+      // Clear existing timeout
       if (typingTimeout) {
         clearTimeout(typingTimeout);
-        setTypingTimeout(null);
       }
+
+      // Set new timeout to stop typing after 3 seconds
+      const newTimeout = setTimeout(() => {
+        setTyping(false);
+      }, 3000);
+      
+      setTypingTimeout(newTimeout);
     }
   };
 
   const handleReply = (message: Message) => {
     setReplyingTo(message);
-  };
-
-  const handleCancelReply = () => {
-    setReplyingTo(null);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setMessageInput(value);
-
-    // Handle typing indicator
-    if (currentRoom) {
-      if (value.trim()) {
-        setTyping(true);
-        
-        // Clear existing timeout
-        if (typingTimeout) {
-          clearTimeout(typingTimeout);
-        }
-        
-        // Set new timeout to stop typing
-        const timeout = setTimeout(() => {
-          setTyping(false);
-        }, UI_CONSTANTS.TYPING_TIMEOUT);
-        
-        setTypingTimeout(timeout);
-      } else {
-        setTyping(false);
-        if (typingTimeout) {
-          clearTimeout(typingTimeout);
-          setTypingTimeout(null);
-        }
-      }
-    }
   };
 
   // Cleanup typing timeout on unmount
@@ -164,72 +163,250 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
           : 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="100" height="100"%3E%3Cpath d="M0 0h100v100H0z" fill="%23ffffff"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")',
       }}
     >
-      {/* Chat Header with Status */}
+      {/* Modern Chat Header */}
       <Paper
         elevation={0}
         sx={{
           p: 2,
           borderRadius: 0,
-          borderBottom: 1,
-          borderColor: isDarkMode ? '#3b4a54' : 'divider',
-          bgcolor: isDarkMode ? '#202c33' : '#f0f2f5',
-          color: isDarkMode ? '#e9edef' : '#000',
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          bgcolor: isDarkMode 
+            ? alpha('#202c33', 0.95) 
+            : alpha('#ffffff', 0.95),
+          backdropFilter: 'blur(10px)',
+          color: isDarkMode ? '#e9edef' : '#111b21',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(37, 211, 102, 0.05) 0%, rgba(18, 140, 126, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(37, 211, 102, 0.02) 0%, rgba(18, 140, 126, 0.02) 100%)',
+            zIndex: -1,
+          },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Avatar 
-            src={room?.type === 'direct' ? otherUser?.avatar : undefined}
-            sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}
-          >
-            {room?.type === 'direct' 
-              ? otherUser?.name?.charAt(0).toUpperCase() 
-              : room?.name?.charAt(0).toUpperCase()
-            }
-          </Avatar>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" component="h2" sx={{ 
-              color: isDarkMode ? '#e9edef' : '#000',
-              fontSize: '1.1rem',
-              fontWeight: 500
-            }}>
-              {room?.type === 'direct' ? otherUser?.name || 'Unknown Contact' : room?.name}
-            </Typography>
-            <Typography variant="body2" sx={{ 
-              color: isDarkMode ? '#8696a0' : '#54656f',
-              fontSize: '0.85rem'
-            }}>
-              {room?.type === 'direct' ? (
-                // For direct messages, show online status or last seen
-                otherUser?.isOnline ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Box sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      bgcolor: '#25d366',
-                      flexShrink: 0
-                    }} />
-                    online
-                  </Box>
-                ) : (
-                  `last seen ${formatLastSeen(otherUser?.lastSeen)}`
-                )
-              ) : (
-                // For group chats, show member count
-                `${room?.memberCount || 0} members`
+        <Fade in timeout={500}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Back Button for Mobile */}
+            <Tooltip title="Back to chats">
+              <IconButton
+                size="small"
+                sx={{ 
+                  display: { xs: 'flex', md: 'none' },
+                  color: 'inherit',
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    transform: 'scale(1.1)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <ArrowBackIcon />
+              </IconButton>
+            </Tooltip>
+
+            {/* Enhanced Avatar with Status Indicator */}
+            <Box sx={{ position: 'relative' }}>
+              <Zoom in timeout={300}>
+                <Avatar 
+                  src={room?.type === 'direct' ? otherUser?.avatar : undefined}
+                  sx={{ 
+                    bgcolor: room?.type === 'group' 
+                      ? theme.palette.secondary.main 
+                      : theme.palette.primary.main, 
+                    width: 48, 
+                    height: 48,
+                    fontSize: '1.2rem',
+                    fontWeight: 600,
+                    border: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    boxShadow: theme.shadows[3],
+                    cursor: 'pointer',
+                    '&:hover': {
+                      transform: 'scale(1.05)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {room?.type === 'direct' 
+                    ? otherUser?.name?.charAt(0).toUpperCase() 
+                    : <GroupIcon />
+                  }
+                </Avatar>
+              </Zoom>
+              
+              {/* Online Status Indicator */}
+              {room?.type === 'direct' && otherUser?.isOnline && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 2,
+                    right: 2,
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    bgcolor: '#4caf50',
+                    border: `3px solid ${theme.palette.background.paper}`,
+                    animation: 'pulse 2s infinite',
+                    '@keyframes pulse': {
+                      '0%': { transform: 'scale(1)', opacity: 1 },
+                      '50%': { transform: 'scale(1.2)', opacity: 0.8 },
+                      '100%': { transform: 'scale(1)', opacity: 1 },
+                    },
+                  }}
+                />
               )}
-            </Typography>
+            </Box>
+
+            {/* User Info */}
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Slide direction="right" in timeout={400}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 600,
+                    fontSize: '1.1rem',
+                    color: 'inherit',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      color: theme.palette.primary.main,
+                    },
+                    transition: 'color 0.2s ease',
+                  }}
+                >
+                  {room?.type === 'direct' ? otherUser?.name : room?.name}
+                  {room?.type === 'group' && (
+                    <Chip 
+                      label={`${room.members.length} members`}
+                      size="small"
+                      sx={{ 
+                        height: 22,
+                        fontSize: '0.7rem',
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        color: theme.palette.primary.main,
+                        fontWeight: 500,
+                      }}
+                    />
+                  )}
+                  {room?.type === 'direct' && otherUser?.isOnline && (
+                    <CheckCircleIcon sx={{ fontSize: 16, color: '#4caf50' }} />
+                  )}
+                </Typography>
+              </Slide>
+              
+              <Fade in timeout={600}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: alpha(isDarkMode ? '#e9edef' : '#111b21', 0.7),
+                    fontSize: '0.8rem',
+                    display: 'block',
+                    fontWeight: 500,
+                  }}
+                >
+                  {room?.type === 'direct' ? (
+                    otherUser?.isOnline ? (
+                      <Box component="span" sx={{ color: '#4caf50', fontWeight: 600 }}>
+                        Online
+                      </Box>
+                    ) : (
+                      `Last seen ${formatLastSeen(otherUser?.lastSeen)}`
+                    )
+                  ) : (
+                    `${room?.members?.map(m => m.user.name).slice(0, 3).join(', ')}${(room?.members?.length || 0) > 3 ? `... and ${(room?.members?.length || 0) - 3} more` : ''}`
+                  )}
+                </Typography>
+              </Fade>
+            </Box>
+
+            {/* Action Buttons */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Tooltip title="Voice call">
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: 'inherit',
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      color: theme.palette.primary.main,
+                      transform: 'scale(1.1)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <PhoneIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Video call">
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: 'inherit',
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      color: theme.palette.primary.main,
+                      transform: 'scale(1.1)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <VideoCallIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              
+              <Tooltip title="More options">
+                <IconButton
+                  size="small"
+                  sx={{ 
+                    color: 'inherit',
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      color: theme.palette.primary.main,
+                      transform: 'scale(1.1)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <MoreIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
-        </Box>
+        </Fade>
       </Paper>
 
-      {/* Messages Area */}
+      {/* Messages Area with Enhanced Styling */}
       <Box
         sx={{
           flexGrow: 1,
           overflow: 'auto',
           p: 1,
           backgroundColor: isDarkMode ? '#0b141a' : '#f0f2f5',
+          backgroundImage: isDarkMode 
+            ? 'url("data:image/svg+xml,%3Csvg width="40" height="40" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="40" height="40"%3E%3Cpath d="M0 0h40v40H0z" fill="none" stroke="%23182229" stroke-width="0.5" opacity="0.3"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")'
+            : 'url("data:image/svg+xml,%3Csvg width="40" height="40" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="40" height="40"%3E%3Cpath d="M0 0h40v40H0z" fill="none" stroke="%23e9edef" stroke-width="0.5" opacity="0.1"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            bgcolor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            bgcolor: alpha(theme.palette.text.secondary, 0.2),
+            borderRadius: '3px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            bgcolor: alpha(theme.palette.text.secondary, 0.3),
+          },
         }}
       >
         {roomMessages.length === 0 ? (
@@ -240,17 +417,67 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
               justifyContent: 'center',
               height: '100%',
               textAlign: 'center',
-              p: 3,
+              p: 4,
             }}
           >
-            <Box>
-              <Typography variant="h6" color="textSecondary" gutterBottom>
-                No messages yet
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Be the first to send a message in #{room?.name}
-              </Typography>
-            </Box>
+            <Fade in timeout={500}>
+              <Box>
+                <Box
+                  sx={{
+                    width: 120,
+                    height: 120,
+                    borderRadius: '50%',
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mx: 'auto',
+                    mb: 3,
+                    border: `3px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                  }}
+                >
+                  <Avatar
+                    src={room?.type === 'direct' ? otherUser?.avatar : undefined}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      bgcolor: theme.palette.primary.main,
+                      fontSize: '2rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {room?.type === 'direct' 
+                      ? otherUser?.name?.charAt(0).toUpperCase() 
+                      : <GroupIcon sx={{ fontSize: '2rem' }} />
+                    }
+                  </Avatar>
+                </Box>
+                
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                  {room?.type === 'direct' ? otherUser?.name : room?.name}
+                </Typography>
+                
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 300 }}>
+                  {room?.type === 'direct' 
+                    ? `This is the beginning of your conversation with ${otherUser?.name}. Say hello!`
+                    : `Welcome to ${room?.name}! This is the start of your group conversation.`
+                  }
+                </Typography>
+
+                <Chip
+                  label="Start messaging"
+                  sx={{
+                    bgcolor: theme.palette.primary.main,
+                    color: 'white',
+                    fontWeight: 500,
+                    px: 2,
+                    '&:hover': {
+                      bgcolor: theme.palette.primary.dark,
+                    },
+                  }}
+                />
+              </Box>
+            </Fade>
           </Box>
         ) : (
           <Box sx={{ pb: 2 }}>
@@ -258,22 +485,34 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
               const prevMessage = index > 0 ? roomMessages[index - 1] : null;
               const showAvatar = !prevMessage || 
                 prevMessage.sender._id !== message.sender._id ||
-                new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() > 300000; // 5 minutes
+                new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() > 300000;
               
               return (
-                <MessageComponent
+                <Slide
                   key={message._id}
-                  message={message}
-                  showAvatar={showAvatar}
-                  currentUserId={user?.id}
-                  onReply={handleReply}
-                />
+                  direction={message.sender._id === user?.id ? "left" : "right"}
+                  in
+                  timeout={300 + index * 50}
+                >
+                  <Box>
+                    <MessageComponent
+                      message={message}
+                      showAvatar={showAvatar}
+                      currentUserId={user?.id}
+                      onReply={handleReply}
+                    />
+                  </Box>
+                </Slide>
               );
             })}
             
             {/* Typing Indicator */}
             {roomTypingUsers.length > 0 && (
-              <TypingIndicator users={roomTypingUsers} />
+              <Slide direction="up" in timeout={200}>
+                <Box>
+                  <TypingIndicator users={roomTypingUsers} />
+                </Box>
+              </Slide>
             )}
             
             <div ref={messagesEndRef} />
@@ -281,130 +520,227 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
         )}
       </Box>
 
-      {/* Message Input */}
+      {/* Modern Message Input */}
       <Paper
-        elevation={3}
+        elevation={0}
         sx={{
           borderRadius: 0,
-          borderTop: 1,
-          borderColor: isDarkMode ? '#3b4a54' : 'divider',
-          bgcolor: isDarkMode ? '#202c33' : '#ffffff',
+          borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          bgcolor: isDarkMode 
+            ? alpha('#202c33', 0.95) 
+            : alpha('#ffffff', 0.95),
+          backdropFilter: 'blur(10px)',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: isDarkMode 
+              ? 'linear-gradient(45deg, rgba(37, 211, 102, 0.02) 0%, rgba(18, 140, 126, 0.02) 100%)'
+              : 'linear-gradient(45deg, rgba(37, 211, 102, 0.01) 0%, rgba(18, 140, 126, 0.01) 100%)',
+            zIndex: -1,
+          },
         }}
       >
-        {/* Reply Preview */}
+        {/* Reply Bar */}
         {replyingTo && (
-          <Box
-            sx={{
-              p: 2,
-              pb: 0,
-              borderBottom: 1,
-              borderBottomColor: isDarkMode ? '#3b4a54' : 'divider',
-            }}
-          >
-            <Paper
-              variant="outlined"
+          <Slide direction="up" in timeout={300}>
+            <Box
               sx={{
-                p: 2,
-                backgroundColor: isDarkMode ? '#182229' : 'grey.50',
-                borderLeft: 3,
-                borderLeftColor: 'primary.main',
-                borderRadius: 1,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                p: 2,
+                mx: 2,
+                mt: 2,
+                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                borderRadius: 3,
+                borderLeft: `4px solid ${theme.palette.primary.main}`,
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                <Typography variant="caption" color="primary" fontWeight="bold">
-                  Replying to {replyingTo.sender.name}:
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="caption" color="primary" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
+                  Replying to {replyingTo.sender.name}
                 </Typography>
                 <Typography 
                   variant="body2" 
                   sx={{ 
-                    opacity: 0.8,
-                    color: isDarkMode ? '#8696a0' : 'inherit',
+                    color: 'text.secondary',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    mt: 0.5,
                   }}
                 >
-                  {replyingTo.content.length > 50
-                    ? `${replyingTo.content.substring(0, 50)}...`
-                    : replyingTo.content}
+                  {replyingTo.content}
                 </Typography>
               </Box>
-              <IconButton size="small" onClick={handleCancelReply}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Paper>
-          </Box>
+              <Tooltip title="Cancel reply">
+                <IconButton 
+                  size="small" 
+                  onClick={() => setReplyingTo(null)}
+                  sx={{ 
+                    ml: 1,
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.error.main, 0.1),
+                      color: theme.palette.error.main,
+                    },
+                  }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Slide>
         )}
-        
-        <Box sx={{ p: 2 }}>
-          <Box
-            component="form"
-            onSubmit={handleMessageSubmit}
-            sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}
-          >
-          <TextField
-            fullWidth
-            multiline
-            maxRows={4}
-            placeholder={`Message #${room?.name}`}
-            value={messageInput}
-            onChange={handleInputChange}
-            variant="outlined"
-            size="small"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 3,
-                backgroundColor: isDarkMode ? '#2a3942' : '#ffffff',
-                color: isDarkMode ? '#e9edef' : '#000',
-                '& fieldset': {
-                  borderColor: isDarkMode ? '#3b4a54' : 'rgba(0, 0, 0, 0.23)',
+
+        {/* Input Form */}
+        <Box component="form" onSubmit={handleMessageSubmit} sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+            {/* Emoji Button */}
+            <Tooltip title="Emoji">
+              <IconButton
+                size="small"
+                sx={{ 
+                  color: 'text.secondary',
+                  mb: 0.5,
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    color: theme.palette.primary.main,
+                    transform: 'scale(1.1)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <EmojiIcon />
+              </IconButton>
+            </Tooltip>
+
+            {/* Message Input */}
+            <TextField
+              fullWidth
+              multiline
+              maxRows={4}
+              placeholder="Type a message..."
+              value={messageInput}
+              onChange={handleInputChange}
+              variant="outlined"
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 6,
+                  bgcolor: isDarkMode 
+                    ? alpha(theme.palette.common.white, 0.05) 
+                    : alpha(theme.palette.common.black, 0.02),
+                  '& fieldset': {
+                    border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                  },
+                  '&:hover fieldset': {
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                  },
+                  '&.Mui-focused fieldset': {
+                    border: `2px solid ${theme.palette.primary.main}`,
+                    boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}`,
+                  },
+                  '& .MuiInputBase-input': {
+                    py: 2,
+                    fontSize: '0.95rem',
+                    '&::placeholder': {
+                      color: alpha(theme.palette.text.secondary, 0.6),
+                      fontStyle: 'italic',
+                    },
+                  },
                 },
-                '&:hover fieldset': {
-                  borderColor: isDarkMode ? '#53bdeb' : 'rgba(0, 0, 0, 0.87)',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: isDarkMode ? '#53bdeb' : '#128c7e',
-                },
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: isDarkMode ? '#8696a0' : 'rgba(0, 0, 0, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-          <IconButton
-            type="submit"
-            color="primary"
-            disabled={!messageInput.trim()}
-            sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                bgcolor: 'primary.dark',
-              },
-              '&:disabled': {
-                bgcolor: 'grey.300',
-                color: 'grey.500',
-              },
-            }}
-          >
-            <SendIcon />
-          </IconButton>
+              }}
+            />
+
+            {/* Attach Button */}
+            <Tooltip title="Attach file">
+              <IconButton
+                size="small"
+                sx={{ 
+                  color: 'text.secondary',
+                  mb: 0.5,
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    color: theme.palette.primary.main,
+                    transform: 'rotate(15deg) scale(1.1)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <AttachFileIcon />
+              </IconButton>
+            </Tooltip>
+
+            {/* Send or Voice Button */}
+            {messageInput.trim() ? (
+              <Zoom in timeout={200}>
+                <IconButton
+                  type="submit"
+                  sx={{
+                    bgcolor: theme.palette.primary.main,
+                    color: 'white',
+                    width: 48,
+                    height: 48,
+                    '&:hover': {
+                      bgcolor: theme.palette.primary.dark,
+                      transform: 'scale(1.05)',
+                      boxShadow: theme.shadows[8],
+                    },
+                    '&:active': {
+                      transform: 'scale(0.95)',
+                    },
+                    transition: 'all 0.2s ease',
+                    boxShadow: theme.shadows[6],
+                  }}
+                >
+                  <SendIcon />
+                </IconButton>
+              </Zoom>
+            ) : (
+              <Tooltip title="Voice message">
+                <IconButton
+                  sx={{ 
+                    color: 'text.secondary',
+                    width: 48,
+                    height: 48,
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      color: theme.palette.primary.main,
+                      transform: 'scale(1.05)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <MicIcon />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
         </Box>
         
         {/* Character count */}
-        <Typography
-          variant="caption"
-          color={messageInput.length > UI_CONSTANTS.MAX_MESSAGE_LENGTH * 0.9 ? 'error' : 'textSecondary'}
-          sx={{ mt: 0.5, display: 'block', textAlign: 'right' }}
-        >
-          {messageInput.length}/{UI_CONSTANTS.MAX_MESSAGE_LENGTH}
-        </Typography>
+        <Fade in={messageInput.length > UI_CONSTANTS.MAX_MESSAGE_LENGTH * 0.7} timeout={300}>
+          <Typography
+            variant="caption"
+            color={messageInput.length > UI_CONSTANTS.MAX_MESSAGE_LENGTH * 0.9 ? 'error' : 'text.secondary'}
+            sx={{ 
+              pb: 1,
+              px: 2, 
+              display: 'block', 
+              textAlign: 'right',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+            }}
+          >
+            {messageInput.length}/{UI_CONSTANTS.MAX_MESSAGE_LENGTH}
+          </Typography>
+        </Fade>
       </Paper>
     </Box>
   );

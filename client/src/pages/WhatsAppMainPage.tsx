@@ -56,17 +56,12 @@ const WhatsAppMainPage: React.FC = () => {
         console.error('Failed to initialize:', error);
       }
     };
-    
-    initialize();
-  }, [user, initializeSocket, loadRooms, isConnected]);
 
-  // Additional effect to load rooms when user is authenticated
-  useEffect(() => {
-    if (user && isConnected) {
-      console.log('User authenticated and connected, loading rooms...');
-      loadRooms();
+    // Only initialize once when user is available
+    if (user) {
+      initialize();
     }
-  }, [user, isConnected, loadRooms]);
+  }, [user]); // Remove isConnected, initializeSocket, loadRooms from dependencies
 
   useEffect(() => {
     // Clean up room connections when component unmounts
@@ -200,12 +195,6 @@ const WhatsAppMainPage: React.FC = () => {
       <Box sx={{ flex: 1, height: '100vh', position: 'relative' }}>
         {selectedRoomId ? (
           <Paper sx={{ height: '100%', borderRadius: 0, display: 'flex', flexDirection: 'column' }}>
-            <WhatsAppHeader 
-              title={getContactName(selectedRoom!)}
-              variant="chat"
-              onNewChatClick={handleNewChatClick}
-              onProfileClick={handleProfileClick}
-            />
             <Box sx={{ flex: 1, overflow: 'hidden' }}>
               <ChatArea />
             </Box>
