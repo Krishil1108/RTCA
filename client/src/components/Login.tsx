@@ -8,10 +8,7 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  Fade,
-  Slide,
   useTheme,
-  alpha,
 } from '@mui/material';
 import { 
   Google as GoogleIcon, 
@@ -73,17 +70,13 @@ const Login: React.FC = () => {
           }}
         >
           {/* Left side - Features */}
-          <Fade in timeout={800}>
-            <Box sx={{ textAlign: { xs: 'center', md: 'left' } }}>
+          <Box sx={{ textAlign: { xs: 'center', md: 'left' } }}>
               <Typography
                 variant="h2"
                 component="h1"
                 sx={{
-                  fontWeight: 800,
-                  background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 700,
+                  color: theme.palette.primary.main,
                   mb: 2,
                   fontSize: { xs: '2.5rem', md: '3.5rem' },
                 }}
@@ -94,82 +87,73 @@ const Login: React.FC = () => {
               <Typography
                 variant="h5"
                 color="text.secondary"
-                sx={{ mb: 4, fontWeight: 300 }}
+                sx={{ mb: 4, fontWeight: 400 }}
               >
                 Connect, communicate, and collaborate in real-time
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
                 {features.map((feature, index) => (
-                  <Slide
+                  <Box
                     key={index}
-                    direction="right"
-                    in
-                    timeout={1000 + index * 200}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      p: 2,
+                      borderRadius: 1,
+                      backgroundColor: theme.palette.action.hover,
+                      border: `1px solid ${theme.palette.divider}`,
+                    }}
                   >
                     <Box
                       sx={{
+                        color: theme.palette.primary.main,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 2,
-                        p: 2,
-                        borderRadius: 2,
-                        background: alpha(theme.palette.primary.main, 0.05),
-                        border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
                       }}
                     >
-                      <Box
-                        sx={{
-                          color: theme.palette.primary.main,
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                      >
-                        {feature.icon}
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle1" fontWeight={600}>
-                          {feature.title}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {feature.desc}
-                        </Typography>
-                      </Box>
+                      {feature.icon}
                     </Box>
-                  </Slide>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        {feature.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {feature.desc}
+                      </Typography>
+                    </Box>
+                  </Box>
                 ))}
               </Box>
             </Box>
-          </Fade>
 
           {/* Right side - Login Form */}
-          <Slide direction="left" in timeout={1000}>
-            <Paper
-              elevation={24}
+          <Paper
+            elevation={2}
+            sx={{
+              padding: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              borderRadius: 1,
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.divider}`,
+            }}
+          >
+            <Box
               sx={{
-                padding: 4,
+                mb: 3,
+                p: 2,
+                borderRadius: 1,
+                backgroundColor: theme.palette.primary.main,
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
-                borderRadius: 3,
-                background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.paper, 0.95)})`,
-                backdropFilter: 'blur(10px)',
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                justifyContent: 'center',
               }}
             >
-              <Box
-                sx={{
-                  mb: 3,
-                  p: 2,
-                  borderRadius: '50%',
-                  background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ChatIcon sx={{ fontSize: 40, color: 'white' }} />
-              </Box>
+              <ChatIcon sx={{ fontSize: 40, color: 'white' }} />
+            </Box>
               
               <Typography
                 component="h2"
@@ -190,18 +174,16 @@ const Login: React.FC = () => {
               </Typography>
 
               {error && (
-                <Fade in>
-                  <Alert
-                    severity="error"
-                    sx={{
-                      width: '100%',
-                      mb: 2,
-                      borderRadius: 2,
-                    }}
-                  >
-                    {error}
-                  </Alert>
-                </Fade>
+                <Alert
+                  severity="error"
+                  sx={{
+                    width: '100%',
+                    mb: 2,
+                    borderRadius: 1,
+                  }}
+                >
+                  {error}
+                </Alert>
               )}
 
               <Button
@@ -212,17 +194,14 @@ const Login: React.FC = () => {
                 sx={{
                   mb: 2,
                   py: 1.5,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   textTransform: 'none',
                   fontSize: '1.1rem',
                   fontWeight: 600,
-                  background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                  backgroundColor: theme.palette.primary.main,
                   '&:hover': {
-                    background: `linear-gradient(45deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
-                    transform: 'translateY(-2px)',
-                    boxShadow: theme.shadows[8],
+                    backgroundColor: theme.palette.primary.dark,
                   },
-                  transition: 'all 0.3s ease',
                 }}
                 size="large"
               >
@@ -250,17 +229,16 @@ const Login: React.FC = () => {
                 startIcon={loading ? <CircularProgress size={20} /> : <ChatIcon />}
                 sx={{
                   py: 1.5,
-                  borderRadius: 2,
+                  borderRadius: 1,
                   textTransform: 'none',
                   fontSize: '1.1rem',
                   fontWeight: 600,
-                  borderWidth: 2,
+                  borderWidth: 1,
+                  borderColor: theme.palette.primary.main,
                   '&:hover': {
-                    borderWidth: 2,
-                    transform: 'translateY(-2px)',
-                    boxShadow: theme.shadows[4],
+                    borderWidth: 1,
+                    backgroundColor: theme.palette.action.hover,
                   },
-                  transition: 'all 0.3s ease',
                 }}
                 size="large"
               >
@@ -276,7 +254,6 @@ const Login: React.FC = () => {
                 By signing in, you agree to our Terms of Service and Privacy Policy
               </Typography>
             </Paper>
-          </Slide>
         </Box>
       </Box>
     </Container>

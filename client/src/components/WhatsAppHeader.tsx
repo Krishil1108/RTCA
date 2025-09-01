@@ -81,12 +81,10 @@ const WhatsAppHeader: React.FC<WhatsAppHeaderProps> = ({
       <AppBar 
         position="static" 
         sx={{ 
-          background: isDarkMode 
-            ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
-            : 'linear-gradient(135deg, #075e54 0%, #128c7e 100%)',
+          backgroundColor: theme.palette.primary.main,
           zIndex: 1201,
-          boxShadow: theme.shadows[8],
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          boxShadow: 'none',
+          borderBottom: `1px solid ${theme.palette.divider}`,
         }}
       >
         <Toolbar sx={{ px: { xs: 1, sm: 2 } }}>
@@ -130,7 +128,7 @@ const WhatsAppHeader: React.FC<WhatsAppHeaderProps> = ({
                     width: 40, 
                     height: 40, 
                     mr: 2,
-                    border: `2px solid ${alpha(theme.palette.common.white, 0.3)}`,
+                    border: `2px solid ${alpha(theme.palette.common.white, 0.2)}`,
                   }} 
                 />
               </Badge>

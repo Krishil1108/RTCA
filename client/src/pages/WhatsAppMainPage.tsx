@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
+  Typography,
   useMediaQuery,
 } from '@mui/material';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
@@ -112,23 +113,23 @@ const WhatsAppMainPage: React.FC = () => {
     return (
       <Box sx={{ 
         height: '100vh', 
-        bgcolor: isDarkMode ? '#111b21' : '#f7f8fa',
-        color: isDarkMode ? '#e9edef' : '#000'
+        bgcolor: muiTheme.palette.background.default,
+        color: muiTheme.palette.text.primary
       }}>
-        {/* Mobile Header */}
-        <WhatsAppHeader 
-          title={selectedRoom ? getContactName(selectedRoom) : 'WhatsApp'}
-          showBackButton={!!selectedRoomId}
-          onBackClick={handleBackToList}
-          onNewChatClick={handleNewChatClick}
-          onProfileClick={handleProfileClick}
-          onSettingsClick={handleSettingsClick}
-        />
+        {/* Mobile Header - Only show when no room is selected */}
+        {!selectedRoomId && (
+          <WhatsAppHeader 
+            title="WhatsApp"
+            onNewChatClick={handleNewChatClick}
+            onProfileClick={handleProfileClick}
+            onSettingsClick={handleSettingsClick}
+          />
+        )}
 
         {/* Mobile Content */}
-        <Box sx={{ height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+        <Box sx={{ height: selectedRoomId ? '100vh' : 'calc(100vh - 64px)', overflow: 'hidden' }}>
           {selectedRoomId ? (
-            <ChatArea />
+            <ChatArea onBackClick={handleBackToList} />
           ) : (
             <WhatsAppChatList onChatSelect={handleChatSelect} />
           )}
@@ -160,9 +161,11 @@ const WhatsAppMainPage: React.FC = () => {
   return (
     <Box sx={{ 
       height: '100vh', 
-      bgcolor: isDarkMode ? '#111b21' : '#f7f8fa',
-      color: isDarkMode ? '#e9edef' : '#000',
-      display: 'flex' 
+      bgcolor: muiTheme.palette.background.default,
+      color: muiTheme.palette.text.primary,
+      display: 'flex',
+      overflow: 'hidden',
+      maxWidth: '100vw',
     }}>
       {/* Debug Panel - Temporary */}
       <DebugPanel />
@@ -176,8 +179,9 @@ const WhatsAppMainPage: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          bgcolor: isDarkMode ? '#202c33' : '#ffffff',
-          color: isDarkMode ? '#e9edef' : '#000',
+          bgcolor: muiTheme.palette.background.paper,
+          color: muiTheme.palette.text.primary,
+          borderRight: `1px solid ${muiTheme.palette.divider}`,
         }}
       >
         <WhatsAppHeader 
@@ -192,11 +196,11 @@ const WhatsAppMainPage: React.FC = () => {
       </Paper>
 
       {/* Right Panel - Chat Area */}
-      <Box sx={{ flex: 1, height: '100vh', position: 'relative' }}>
+      <Box sx={{ flex: 1, height: '100vh', position: 'relative', overflow: 'hidden' }}>
         {selectedRoomId ? (
-          <Paper sx={{ height: '100%', borderRadius: 0, display: 'flex', flexDirection: 'column' }}>
+          <Paper sx={{ height: '100%', borderRadius: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <Box sx={{ flex: 1, overflow: 'hidden' }}>
-              <ChatArea />
+              <ChatArea onBackClick={handleBackToList} />
             </Box>
           </Paper>
         ) : (
@@ -207,30 +211,51 @@ const WhatsAppMainPage: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'center',
               bgcolor: muiTheme.palette.background.paper,
-              backgroundImage: `url(data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"%3E%3Cg opacity="0.1"%3E%3Cpath d="M500 0L1000 500L500 1000L0 500z" fill="${encodeURIComponent(muiTheme.palette.primary.main)}"/%3E%3C/g%3E%3C/svg%3E)`,
-              backgroundSize: '200px 200px',
-              backgroundRepeat: 'repeat',
             }}
           >
             <Box sx={{ textAlign: 'center', maxWidth: 400, px: 4 }}>
               <Box
                 sx={{
-                  width: 200,
-                  height: 200,
+                  width: 120,
+                  height: 120,
                   margin: '0 auto 2rem',
-                  backgroundImage: 'url(data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Ccircle cx="100" cy="100" r="80" fill="%23e0e0e0"/%3E%3Ctext x="100" y="110" text-anchor="middle" font-family="Arial" font-size="60" fill="%23888"%3ERTCA%3C/text%3E%3C/svg%3E)',
-                  backgroundSize: 'contain',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'center',
+                  borderRadius: 1,
+                  backgroundColor: muiTheme.palette.primary.main,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mb: 4,
                 }}
-              />
-              <h2 style={{ color: '#41525d', fontWeight: 300, marginBottom: '1rem' }}>
-                WhatsApp Web
-              </h2>
-              <p style={{ color: '#667781', lineHeight: 1.5 }}>
-                Send and receive messages without keeping your phone online.<br />
-                Use WhatsApp on up to 4 linked devices and 1 phone at the same time.
-              </p>
+              >
+                <Typography
+                  variant="h4"
+                  sx={{
+                    color: 'white',
+                    fontWeight: 600,
+                  }}
+                >
+                  RC
+                </Typography>
+              </Box>
+              <Typography
+                variant="h5"
+                sx={{
+                  color: muiTheme.palette.text.primary,
+                  fontWeight: 500,
+                  mb: 2,
+                }}
+              >
+                RTCA Chat
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: muiTheme.palette.text.secondary,
+                  lineHeight: 1.6,
+                }}
+              >
+                Select a conversation to start messaging or create a new chat to connect with your team.
+              </Typography>
             </Box>
           </Box>
         )}

@@ -7,13 +7,24 @@ import {
   IconButton,
   Avatar,
   Chip,
-  Fade,
-  Slide,
   useTheme,
+  useMediaQuery,
   alpha,
   Zoom,
   Tooltip,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  ListItemSecondaryAction,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -27,11 +38,23 @@ import {
   VideoCall as VideoCallIcon,
   Group as GroupIcon,
   CheckCircle as CheckCircleIcon,
+  InsertDriveFile as FileIcon,
+  Image as ImageIcon,
+  Description as DocumentIcon,
+  Delete as DeleteIcon,
+  DeleteSweep as DeleteSweepIcon,
+  Reply as ReplyIcon,
+  ContentCopy as CopyIcon,
+  Forward as ForwardIcon,
+  SelectAll as SelectAllIcon,
+  CheckBox as CheckBoxIcon,
+  CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon,
 } from '@mui/icons-material';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useWhatsAppTheme } from '../contexts/ThemeContext';
 import { Message } from '../services/chatService';
+import socketService from '../services/socketService';
 import MessageComponent from './MessageComponent';
 import TypingIndicator from './TypingIndicator';
 import WelcomeMessage from './WelcomeMessage';
@@ -39,9 +62,10 @@ import { UI_CONSTANTS } from '../config/constants';
 
 interface ChatAreaProps {
   onStartConversation?: () => void;
+  onBackClick?: () => void;
 }
 
-const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
+const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick }) => {
   const {
     currentRoom,
     rooms,
@@ -49,16 +73,29 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
     sendMessage,
     setTyping,
     typingUsers,
+    clearMessages,
+    deleteMessage,
   } = useChat();
 
   const { user } = useAuth();
   const { isDarkMode } = useWhatsAppTheme();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [messageInput, setMessageInput] = useState('');
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [filePreviewOpen, setFilePreviewOpen] = useState(false);
+  const [headerMenuAnchor, setHeaderMenuAnchor] = useState<null | HTMLElement>(null);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+  const [isMessageSelectionMode, setIsMessageSelectionMode] = useState(false);
+  const [forwardDialogOpen, setForwardDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Format last seen time
   const formatLastSeen = (lastSeen: string | Date | undefined) => {
@@ -81,7 +118,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
 
   // Current room data
   const room = rooms.find(r => r._id === currentRoom);
-  const roomMessages = currentRoom ? messages[currentRoom] || [] : [];
+  const allRoomMessages = currentRoom ? messages[currentRoom] || [] : [];
+  
+  // Deduplicate messages by ID to prevent duplicate keys
+  const roomMessages = allRoomMessages.filter((message, index, self) => 
+    index === self.findIndex(m => m._id === message._id)
+  );
   const roomTypingUsers = currentRoom ? typingUsers[currentRoom] || [] : [];
   
   // Get the other user in direct messages (not the current user)
@@ -101,6 +143,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
 
   const handleMessageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If there are attached files, open preview instead of sending immediately
+    if (attachedFiles.length > 0) {
+      setFilePreviewOpen(true);
+      return;
+    }
+    
     if (messageInput.trim() && currentRoom) {
       sendMessage(messageInput.trim(), 'text', replyingTo?._id);
       setMessageInput('');
@@ -134,6 +183,210 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
 
   const handleReply = (message: Message) => {
     setReplyingTo(message);
+    // Focus the input field when replying
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 100);
+  };
+
+  // File attachment handlers
+  const handleAttachClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      // Limit to 5 files at once
+      const selectedFiles = files.slice(0, 5);
+      setAttachedFiles(prev => [...prev, ...selectedFiles]);
+      setFilePreviewOpen(true);
+    }
+    // Reset input value to allow selecting the same file again
+    if (e.target) {
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSendWithFiles = async () => {
+    if (!currentRoom) return;
+
+    for (const file of attachedFiles) {
+      // For now, we'll simulate file upload by sending file info as message
+      // In a real app, you'd upload to a server and get a URL
+      const fileInfo = {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified,
+      };
+      
+      const messageContent = `📎 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+      sendMessage(messageContent, 'file', replyingTo?._id);
+    }
+
+    // Send text message if there's any
+    if (messageInput.trim()) {
+      sendMessage(messageInput.trim(), 'text', replyingTo?._id);
+    }
+
+    // Reset state
+    setAttachedFiles([]);
+    setMessageInput('');
+    setReplyingTo(null);
+    setFilePreviewOpen(false);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Header menu handlers
+  const handleHeaderMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setHeaderMenuAnchor(event.currentTarget);
+  };
+
+  const handleHeaderMenuClose = () => {
+    setHeaderMenuAnchor(null);
+  };
+
+  const handleDeleteAllMessages = () => {
+    setDeleteAllDialogOpen(true);
+    handleHeaderMenuClose();
+  };
+
+  const confirmDeleteAllMessages = async () => {
+    if (!currentRoom) return;
+    
+    try {
+      await clearMessages(currentRoom);
+      setDeleteAllDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to clear messages:', error);
+      // You could show a toast notification here
+    }
+  };
+
+  // Message selection handlers
+  const handleMessageLongPress = (message: Message) => {
+    // Long press no longer triggers selection - it's handled by the MessageComponent's context menu
+    // This handler can be removed or used for other purposes
+  };
+
+  const handleMessageDoubleClick = (message: Message) => {
+    // Double click triggers message selection
+    setSelectedMessage(message);
+    setSelectedMessages(new Set([message._id]));
+    setIsMessageSelectionMode(true);
+  };
+
+  const handleMessageClick = (message: Message) => {
+    // Only handle clicks when already in selection mode
+    if (!isMessageSelectionMode) return;
+    
+    const newSelectedMessages = new Set(selectedMessages);
+    if (newSelectedMessages.has(message._id)) {
+      newSelectedMessages.delete(message._id);
+    } else {
+      newSelectedMessages.add(message._id);
+    }
+    setSelectedMessages(newSelectedMessages);
+    
+    // If no messages selected, exit selection mode
+    if (newSelectedMessages.size === 0) {
+      handleExitSelectionMode();
+    } else {
+      // Update the primary selected message to the most recently selected
+      setSelectedMessage(message);
+    }
+  };
+
+  const handleSelectAllMessages = () => {
+    if (currentRoom && messages[currentRoom]) {
+      const allMessageIds = new Set(messages[currentRoom].map(m => m._id));
+      setSelectedMessages(allMessageIds);
+    }
+  };
+
+  const handleDeselectAllMessages = () => {
+    setSelectedMessages(new Set());
+    handleExitSelectionMode();
+  };
+
+  const handleExitSelectionMode = () => {
+    setSelectedMessage(null);
+    setSelectedMessages(new Set());
+    setIsMessageSelectionMode(false);
+  };
+
+  const handleReplyToSelected = () => {
+    if (selectedMessage) {
+      setReplyingTo(selectedMessage);
+      handleExitSelectionMode();
+      // Focus the input field
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+    }
+  };
+
+  const handleCopySelectedMessage = () => {
+    if (selectedMessage) {
+      navigator.clipboard.writeText(selectedMessage.content);
+      handleExitSelectionMode();
+      // You could show a toast notification here
+    }
+  };
+
+  const handleDeleteSelectedMessage = () => {
+    if (selectedMessages.size > 0) {
+      // Delete all selected messages
+      selectedMessages.forEach(messageId => {
+        deleteMessage(messageId);
+      });
+      handleExitSelectionMode();
+    }
+  };
+
+  const handleForwardSelectedMessage = () => {
+    if (selectedMessages.size > 0) {
+      setForwardDialogOpen(true);
+    }
+  };
+
+  const handleForwardToRoom = (roomId: string) => {
+    if (selectedMessages.size > 0 && currentRoom) {
+      try {
+        // Forward all selected messages
+        selectedMessages.forEach(messageId => {
+          const message = messages[currentRoom]?.find(m => m._id === messageId);
+          if (message) {
+            const forwardedContent = `📤 Forwarded: ${message.content}`;
+            socketService.sendMessage(roomId, forwardedContent, 'text');
+          }
+        });
+        
+        setForwardDialogOpen(false);
+        handleExitSelectionMode();
+      } catch (error) {
+        console.error('Error forwarding message:', error);
+        // You could show an error toast here
+      }
+    }
   };
 
   // Cleanup typing timeout on unmount
@@ -161,53 +414,52 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
         backgroundImage: isDarkMode 
           ? 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="100" height="100"%3E%3Cpath d="M0 0h100v100H0z" fill="%23182229"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")'
           : 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="100" height="100"%3E%3Cpath d="M0 0h100v100H0z" fill="%23ffffff"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")',
+        overflow: 'hidden', // Prevent horizontal scrolling
+        maxWidth: '100%', // Ensure no overflow
       }}
     >
-      {/* Modern Chat Header */}
+      {/* Professional Chat Header */}
       <Paper
         elevation={0}
         sx={{
           p: 2,
           borderRadius: 0,
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          bgcolor: isDarkMode 
-            ? alpha('#202c33', 0.95) 
-            : alpha('#ffffff', 0.95),
-          backdropFilter: 'blur(10px)',
-          color: isDarkMode ? '#e9edef' : '#111b21',
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          backgroundColor: isMessageSelectionMode 
+            ? alpha(theme.palette.primary.main, 0.1)
+            : theme.palette.background.paper,
+          color: isMessageSelectionMode 
+            ? theme.palette.primary.main 
+            : theme.palette.text.primary,
           position: 'relative',
           overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: isDarkMode 
-              ? 'linear-gradient(135deg, rgba(37, 211, 102, 0.05) 0%, rgba(18, 140, 126, 0.05) 100%)'
-              : 'linear-gradient(135deg, rgba(37, 211, 102, 0.02) 0%, rgba(18, 140, 126, 0.02) 100%)',
-            zIndex: -1,
-          },
+          borderLeft: isMessageSelectionMode ? `3px solid ${theme.palette.primary.main}` : 'none',
         }}
       >
-        <Fade in timeout={500}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {/* Mobile-Optimized Header Layout */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row', 
+          gap: isMobile ? 1 : 2 
+        }}>
+          {/* Main Header Row */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
             {/* Back Button for Mobile */}
             <Tooltip title="Back to chats">
               <IconButton
                 size="small"
+                onClick={onBackClick}
                 sx={{ 
                   display: { xs: 'flex', md: 'none' },
                   color: 'inherit',
+                  width: isMobile ? 36 : 40,
+                  height: isMobile ? 36 : 40,
                   '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    transform: 'scale(1.1)',
+                    bgcolor: theme.palette.action.hover,
                   },
-                  transition: 'all 0.2s ease',
                 }}
               >
-                <ArrowBackIcon />
+                <ArrowBackIcon sx={{ fontSize: isMobile ? 18 : 20 }} />
               </IconButton>
             </Tooltip>
 
@@ -220,9 +472,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                     bgcolor: room?.type === 'group' 
                       ? theme.palette.secondary.main 
                       : theme.palette.primary.main, 
-                    width: 48, 
-                    height: 48,
-                    fontSize: '1.2rem',
+                    width: isMobile ? 40 : 48, 
+                    height: isMobile ? 40 : 48,
+                    fontSize: isMobile ? '1rem' : '1.2rem',
                     fontWeight: 600,
                     border: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                     boxShadow: theme.shadows[3],
@@ -235,7 +487,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                 >
                   {room?.type === 'direct' 
                     ? otherUser?.name?.charAt(0).toUpperCase() 
-                    : <GroupIcon />
+                    : <GroupIcon sx={{ fontSize: isMobile ? 18 : 20 }} />
                   }
                 </Avatar>
               </Zoom>
@@ -245,13 +497,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                 <Box
                   sx={{
                     position: 'absolute',
-                    bottom: 2,
-                    right: 2,
-                    width: 14,
-                    height: 14,
+                    bottom: 1,
+                    right: 1,
+                    width: isMobile ? 10 : 14,
+                    height: isMobile ? 10 : 14,
                     borderRadius: '50%',
                     bgcolor: '#4caf50',
-                    border: `3px solid ${theme.palette.background.paper}`,
+                    border: `2px solid ${theme.palette.background.paper}`,
                     animation: 'pulse 2s infinite',
                     '@keyframes pulse': {
                       '0%': { transform: 'scale(1)', opacity: 1 },
@@ -265,51 +517,62 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
 
             {/* User Info */}
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-              <Slide direction="right" in timeout={400}>
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
-                    fontWeight: 600,
-                    fontSize: '1.1rem',
-                    color: 'inherit',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    cursor: 'pointer',
-                    '&:hover': {
+              <Typography 
+                variant={isMobile ? "body1" : "h6"} 
+                sx={{ 
+                  fontWeight: isMessageSelectionMode ? 700 : 600,
+                  fontSize: isMobile ? (isMessageSelectionMode ? '1.1rem' : '0.95rem') : '1.1rem',
+                  color: isMessageSelectionMode 
+                    ? theme.palette.primary.main
+                    : 'inherit',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    color: theme.palette.primary.main,
+                  },
+                  transition: 'color 0.2s ease',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {isMessageSelectionMode 
+                  ? selectedMessages.size > 0 
+                    ? `${selectedMessages.size} selected`
+                    : "Select messages"
+                  : (room?.type === 'direct' ? otherUser?.name : room?.name)
+                }
+                {room?.type === 'group' && !isMessageSelectionMode && !isMobile && (
+                  <Chip 
+                    label={`${room.members.length} members`}
+                    size="small"
+                    sx={{ 
+                      height: 20,
+                      fontSize: '0.65rem',
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
                       color: theme.palette.primary.main,
-                    },
-                    transition: 'color 0.2s ease',
-                  }}
-                >
-                  {room?.type === 'direct' ? otherUser?.name : room?.name}
-                  {room?.type === 'group' && (
-                    <Chip 
-                      label={`${room.members.length} members`}
-                      size="small"
-                      sx={{ 
-                        height: 22,
-                        fontSize: '0.7rem',
-                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                        color: theme.palette.primary.main,
-                        fontWeight: 500,
-                      }}
-                    />
-                  )}
-                  {room?.type === 'direct' && otherUser?.isOnline && (
-                    <CheckCircleIcon sx={{ fontSize: 16, color: '#4caf50' }} />
-                  )}
-                </Typography>
-              </Slide>
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+                {room?.type === 'direct' && otherUser?.isOnline && !isMobile && (
+                  <CheckCircleIcon sx={{ fontSize: 14, color: '#4caf50' }} />
+                )}
+              </Typography>
               
-              <Fade in timeout={600}>
+              {!isMessageSelectionMode && (
                 <Typography 
                   variant="caption" 
                   sx={{ 
                     color: alpha(isDarkMode ? '#e9edef' : '#111b21', 0.7),
-                    fontSize: '0.8rem',
+                    fontSize: isMobile ? '0.7rem' : '0.8rem',
                     display: 'block',
                     fontWeight: 500,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {room?.type === 'direct' ? (
@@ -321,67 +584,240 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                       `Last seen ${formatLastSeen(otherUser?.lastSeen)}`
                     )
                   ) : (
-                    `${room?.members?.map(m => m.user.name).slice(0, 3).join(', ')}${(room?.members?.length || 0) > 3 ? `... and ${(room?.members?.length || 0) - 3} more` : ''}`
+                    isMobile 
+                      ? `${room?.members?.length || 0} members`
+                      : `${room?.members?.filter(m => m?.user?.name).map(m => m.user.name).slice(0, 3).join(', ')}${(room?.members?.length || 0) > 3 ? `... and ${(room?.members?.length || 0) - 3} more` : ''}`
                   )}
                 </Typography>
-              </Fade>
+              )}
             </Box>
 
-            {/* Action Buttons */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Tooltip title="Voice call">
-                <IconButton
-                  size="small"
-                  sx={{ 
-                    color: 'inherit',
-                    '&:hover': {
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      color: theme.palette.primary.main,
-                      transform: 'scale(1.1)',
-                    },
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <PhoneIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+            {/* Desktop Actions */}
+            {!isMobile && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {!isMessageSelectionMode && (
+                  <>
+                    <Tooltip title="Voice call">
+                      <IconButton
+                        size="small"
+                        sx={{ 
+                          color: 'inherit',
+                          '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            color: theme.palette.primary.main,
+                            transform: 'scale(1.1)',
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <PhoneIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
 
-              <Tooltip title="Video call">
-                <IconButton
-                  size="small"
-                  sx={{ 
-                    color: 'inherit',
-                    '&:hover': {
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      color: theme.palette.primary.main,
-                      transform: 'scale(1.1)',
-                    },
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <VideoCallIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              
-              <Tooltip title="More options">
-                <IconButton
-                  size="small"
-                  sx={{ 
-                    color: 'inherit',
-                    '&:hover': {
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      color: theme.palette.primary.main,
-                      transform: 'scale(1.1)',
-                    },
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <MoreIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+                    <Tooltip title="Video call">
+                      <IconButton
+                        size="small"
+                        sx={{ 
+                          color: 'inherit',
+                          '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            color: theme.palette.primary.main,
+                            transform: 'scale(1.1)',
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <VideoCallIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    
+                    <Tooltip title="More options">
+                      <IconButton
+                        size="small"
+                        onClick={handleHeaderMenuClick}
+                        sx={{ 
+                          color: 'inherit',
+                          '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                          color: theme.palette.primary.main,
+                          transform: 'scale(1.1)',
+                        },
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <MoreIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </>
+              )}
             </Box>
+          )}
           </Box>
-        </Fade>
+          
+          {/* Mobile Action Bar - Stacked Below Main Header */}
+          {isMobile && (
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: isMessageSelectionMode ? 'center' : 'flex-end',
+              gap: 1,
+              mt: 0.5
+            }}>
+              {isMessageSelectionMode ? (
+                // Mobile Selection Bar
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    borderRadius: 3,
+                    px: 3,
+                    py: 1,
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+                    width: '100%',
+                    maxWidth: 400,
+                  }}
+                >
+                  {/* Mobile Action Buttons */}
+                  <Tooltip title={selectedMessages.size === (messages[currentRoom!]?.length || 0) ? "Deselect all" : "Select all"}>
+                    <IconButton
+                      size="small"
+                      onClick={selectedMessages.size === (messages[currentRoom!]?.length || 0) ? handleDeselectAllMessages : handleSelectAllMessages}
+                      sx={{ 
+                        color: theme.palette.primary.main,
+                        width: 42,
+                        height: 42,
+                        '&:hover': {
+                          backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                        },
+                      }}
+                    >
+                      {selectedMessages.size === (messages[currentRoom!]?.length || 0) ? 
+                        <CheckBoxIcon sx={{ fontSize: 20 }} /> : 
+                        <CheckBoxOutlineBlankIcon sx={{ fontSize: 20 }} />
+                      }
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Delete selected">
+                    <IconButton
+                      size="small"
+                      onClick={handleDeleteSelectedMessage}
+                      disabled={selectedMessages.size === 0}
+                      sx={{ 
+                        color: selectedMessages.size > 0 ? theme.palette.error.main : theme.palette.text.disabled,
+                        width: 42,
+                        height: 42,
+                        '&:hover': {
+                          backgroundColor: selectedMessages.size > 0 ? alpha(theme.palette.error.main, 0.08) : 'transparent',
+                        },
+                      }}
+                    >
+                      <DeleteIcon sx={{ fontSize: 20 }} />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Forward selected">
+                    <IconButton
+                      size="small"
+                      onClick={handleForwardSelectedMessage}
+                      disabled={selectedMessages.size === 0}
+                      sx={{ 
+                        color: selectedMessages.size > 0 ? theme.palette.success.main : theme.palette.text.disabled,
+                        width: 42,
+                        height: 42,
+                        '&:hover': {
+                          backgroundColor: selectedMessages.size > 0 ? alpha(theme.palette.success.main, 0.08) : 'transparent',
+                        },
+                      }}
+                    >
+                      <ForwardIcon sx={{ fontSize: 20 }} />
+                    </IconButton>
+                  </Tooltip>
+
+                  {/* Spacer */}
+                  <Box sx={{ flexGrow: 1 }} />
+
+                  <Tooltip title="Exit selection">
+                    <IconButton
+                      size="small"
+                      onClick={handleExitSelectionMode}
+                      sx={{ 
+                        color: theme.palette.text.secondary,
+                        width: 42,
+                        height: 42,
+                        '&:hover': {
+                          backgroundColor: theme.palette.action.hover,
+                        },
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 20 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              ) : (
+                // Mobile Normal Actions
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Tooltip title="Voice call">
+                    <IconButton
+                      size="small"
+                      sx={{ 
+                        color: 'inherit',
+                        width: 40,
+                        height: 40,
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                          color: theme.palette.primary.main,
+                        },
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <PhoneIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Video call">
+                    <IconButton
+                      size="small"
+                      sx={{ 
+                        color: 'inherit',
+                        width: 40,
+                        height: 40,
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                          color: theme.palette.primary.main,
+                        },
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <VideoCallIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  
+                  <Tooltip title="More options">
+                    <IconButton
+                      size="small"
+                      onClick={handleHeaderMenuClick}
+                      sx={{ 
+                        color: 'inherit',
+                        width: 40,
+                        height: 40,
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                          color: theme.palette.primary.main,
+                        },
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <MoreIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
       </Paper>
 
       {/* Messages Area with Enhanced Styling */}
@@ -389,7 +825,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
         sx={{
           flexGrow: 1,
           overflow: 'auto',
+          overflowX: 'hidden', // Prevent horizontal scrolling
           p: 1,
+          maxWidth: '100%', // Ensure no overflow
           backgroundColor: isDarkMode ? '#0b141a' : '#f0f2f5',
           backgroundImage: isDarkMode 
             ? 'url("data:image/svg+xml,%3Csvg width="40" height="40" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="40" height="40"%3E%3Cpath d="M0 0h40v40H0z" fill="none" stroke="%23182229" stroke-width="0.5" opacity="0.3"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")'
@@ -420,64 +858,62 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
               p: 4,
             }}
           >
-            <Fade in timeout={500}>
-              <Box>
-                <Box
+            <Box>
+              <Box
+                sx={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: '50%',
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mx: 'auto',
+                  mb: 3,
+                  border: `3px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                }}
+              >
+                <Avatar
+                  src={room?.type === 'direct' ? otherUser?.avatar : undefined}
                   sx={{
-                    width: 120,
-                    height: 120,
-                    borderRadius: '50%',
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mx: 'auto',
-                    mb: 3,
-                    border: `3px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    width: 80,
+                    height: 80,
+                    bgcolor: theme.palette.primary.main,
+                    fontSize: '2rem',
+                    fontWeight: 600,
                   }}
                 >
-                  <Avatar
-                    src={room?.type === 'direct' ? otherUser?.avatar : undefined}
-                    sx={{
-                      width: 80,
-                      height: 80,
-                      bgcolor: theme.palette.primary.main,
-                      fontSize: '2rem',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {room?.type === 'direct' 
-                      ? otherUser?.name?.charAt(0).toUpperCase() 
-                      : <GroupIcon sx={{ fontSize: '2rem' }} />
-                    }
-                  </Avatar>
-                </Box>
-                
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                  {room?.type === 'direct' ? otherUser?.name : room?.name}
-                </Typography>
-                
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 300 }}>
                   {room?.type === 'direct' 
-                    ? `This is the beginning of your conversation with ${otherUser?.name}. Say hello!`
-                    : `Welcome to ${room?.name}! This is the start of your group conversation.`
+                    ? otherUser?.name?.charAt(0).toUpperCase() 
+                    : <GroupIcon sx={{ fontSize: '2rem' }} />
                   }
-                </Typography>
-
-                <Chip
-                  label="Start messaging"
-                  sx={{
-                    bgcolor: theme.palette.primary.main,
-                    color: 'white',
-                    fontWeight: 500,
-                    px: 2,
-                    '&:hover': {
-                      bgcolor: theme.palette.primary.dark,
-                    },
-                  }}
-                />
+                </Avatar>
               </Box>
-            </Fade>
+              
+              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                {room?.type === 'direct' ? otherUser?.name : room?.name}
+              </Typography>
+              
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 300 }}>
+                {room?.type === 'direct' 
+                  ? `This is the beginning of your conversation with ${otherUser?.name}. Say hello!`
+                  : `Welcome to ${room?.name}! This is the start of your group conversation.`
+                }
+              </Typography>
+
+              <Chip
+                label="Start messaging"
+                sx={{
+                  bgcolor: theme.palette.primary.main,
+                  color: 'white',
+                  fontWeight: 500,
+                  px: 2,
+                  '&:hover': {
+                    bgcolor: theme.palette.primary.dark,
+                  },
+                }}
+              />
+            </Box>
           </Box>
         ) : (
           <Box sx={{ pb: 2 }}>
@@ -488,39 +924,33 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                 new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() > 300000;
               
               return (
-                <Slide
-                  key={message._id}
-                  direction={message.sender._id === user?.id ? "left" : "right"}
-                  in
-                  timeout={300 + index * 50}
-                >
-                  <Box>
-                    <MessageComponent
-                      message={message}
-                      showAvatar={showAvatar}
-                      currentUserId={user?.id}
-                      onReply={handleReply}
-                    />
-                  </Box>
-                </Slide>
+                <Box key={`${message._id}-${index}`}>
+                  <MessageComponent
+                    message={message}
+                    showAvatar={showAvatar}
+                    currentUserId={user?.id}
+                    onReply={handleReply}
+                    onLongPress={handleMessageLongPress}
+                    onClick={handleMessageClick}
+                    onDoubleClick={handleMessageDoubleClick}
+                    isSelected={selectedMessages.has(message._id)}
+                    isSelectionMode={isMessageSelectionMode}
+                  />
+                </Box>
               );
             })}
             
             {/* Typing Indicator */}
             {roomTypingUsers.length > 0 && (
-              <Slide direction="up" in timeout={200}>
-                <Box>
-                  <TypingIndicator users={roomTypingUsers} />
-                </Box>
-              </Slide>
+              <Box>
+                <TypingIndicator users={roomTypingUsers} />
+              </Box>
             )}
             
             <div ref={messagesEndRef} />
-          </Box>
-        )}
-      </Box>
-
-      {/* Modern Message Input */}
+            </Box>
+          )}
+        </Box>      {/* Modern Message Input */}
       <Paper
         elevation={0}
         sx={{
@@ -531,6 +961,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
             : alpha('#ffffff', 0.95),
           backdropFilter: 'blur(10px)',
           position: 'relative',
+          overflow: 'hidden', // Prevent horizontal scrolling
+          maxWidth: '100%', // Ensure no overflow
+          minHeight: { xs: 60, md: 'auto' }, // Smaller on mobile
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -547,24 +980,23 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
       >
         {/* Reply Bar */}
         {replyingTo && (
-          <Slide direction="up" in timeout={300}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                p: 2,
-                mx: 2,
-                mt: 2,
-                bgcolor: alpha(theme.palette.primary.main, 0.08),
-                borderRadius: 3,
-                borderLeft: `4px solid ${theme.palette.primary.main}`,
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              p: 2,
+              mx: 2,
+              mt: 2,
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
+              borderRadius: 3,
+              borderLeft: `4px solid ${theme.palette.primary.main}`,
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography variant="caption" color="primary" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
-                  Replying to {replyingTo.sender.name}
+                  Replying to {replyingTo?.sender?.name || 'Unknown User'}
                 </Typography>
                 <Typography 
                   variant="body2" 
@@ -595,19 +1027,63 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                 </IconButton>
               </Tooltip>
             </Box>
-          </Slide>
+        )}
+
+        {/* Attached Files Preview */}
+        {attachedFiles.length > 0 && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              p: 1.5,
+              mx: 2,
+              mt: 1,
+              bgcolor: alpha(theme.palette.warning.main, 0.08),
+              borderRadius: 2,
+              borderLeft: `4px solid ${theme.palette.warning.main}`,
+              gap: 1,
+            }}
+          >
+              <AttachFileIcon color="warning" fontSize="small" />
+              <Typography variant="body2" sx={{ flex: 1, color: isDarkMode ? '#e9edef' : 'text.primary' }}>
+                {attachedFiles.length} file{attachedFiles.length > 1 ? 's' : ''} attached
+              </Typography>
+              <Tooltip title="Preview files">
+                <IconButton 
+                  size="small" 
+                  onClick={() => setFilePreviewOpen(true)}
+                  sx={{ color: theme.palette.warning.main }}
+                >
+                  <FileIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Remove all files">
+                <IconButton 
+                  size="small" 
+                  onClick={() => setAttachedFiles([])}
+                  sx={{ 
+                    color: theme.palette.error.main,
+                    '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) }
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
         )}
 
         {/* Input Form */}
-        <Box component="form" onSubmit={handleMessageSubmit} sx={{ p: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+        <Box component="form" onSubmit={handleMessageSubmit} sx={{ p: { xs: 1, md: 2 }, overflow: 'hidden', maxWidth: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: { xs: 0.5, md: 1 }, overflow: 'hidden', maxWidth: '100%' }}>
             {/* Emoji Button */}
             <Tooltip title="Emoji">
               <IconButton
                 size="small"
                 sx={{ 
                   color: 'text.secondary',
-                  mb: 0.5,
+                  mb: 0.2,
+                  minWidth: { xs: 36, md: 40 },
+                  height: { xs: 36, md: 40 },
                   '&:hover': {
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
@@ -616,7 +1092,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                   transition: 'all 0.2s ease',
                 }}
               >
-                <EmojiIcon />
+                <EmojiIcon fontSize={isMobile ? 'small' : 'medium'} />
               </IconButton>
             </Tooltip>
 
@@ -624,35 +1100,60 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
             <TextField
               fullWidth
               multiline
-              maxRows={4}
+              maxRows={isMobile ? 3 : 4}
               placeholder="Type a message..."
               value={messageInput}
               onChange={handleInputChange}
               variant="outlined"
               size="small"
+              inputRef={inputRef}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="sentences"
+              inputMode="text"
+              onTouchStart={() => {
+                // Ensure input gets focus on mobile touch
+                if (isMobile && inputRef.current) {
+                  inputRef.current.focus();
+                }
+              }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 6,
-                  bgcolor: isDarkMode 
-                    ? alpha(theme.palette.common.white, 0.05) 
-                    : alpha(theme.palette.common.black, 0.02),
+                  borderRadius: { xs: 20, md: 6 },
+                  minHeight: { xs: 40, md: 48 },
+                  backgroundColor: isDarkMode 
+                    ? '#374151' 
+                    : '#f9fafb',
                   '& fieldset': {
-                    border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                    border: `1px solid ${isDarkMode ? '#4b5563' : '#d1d5db'}`,
                   },
-                  '&:hover fieldset': {
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                  '&:hover': {
+                    '& fieldset': {
+                      border: `1px solid ${isDarkMode ? '#6b7280' : '#9ca3af'}`,
+                    },
+                    transform: 'scale(1.01)',
                   },
-                  '&.Mui-focused fieldset': {
-                    border: `2px solid ${theme.palette.primary.main}`,
-                    boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}`,
+                  '&.Mui-focused': {
+                    '& fieldset': {
+                      border: `2px solid #3b82f6`,
+                    },
+                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
                   },
                   '& .MuiInputBase-input': {
-                    py: 2,
-                    fontSize: '0.95rem',
+                    py: { xs: 1, md: 2 },
+                    px: { xs: 2, md: 2 },
+                    fontSize: { xs: '0.9rem', md: '0.95rem' },
+                    color: isDarkMode ? '#ffffff' : '#374151',
+                    fontWeight: 400,
+                    lineHeight: 1.4,
                     '&::placeholder': {
                       color: alpha(theme.palette.text.secondary, 0.6),
                       fontStyle: 'italic',
                     },
+                    // Mobile-specific touch optimizations
+                    WebkitAppearance: 'none',
+                    WebkitUserSelect: 'text',
+                    WebkitTouchCallout: 'default',
                   },
                 },
               }}
@@ -662,9 +1163,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
             <Tooltip title="Attach file">
               <IconButton
                 size="small"
+                onClick={handleAttachClick}
                 sx={{ 
                   color: 'text.secondary',
-                  mb: 0.5,
+                  mb: 0.2,
+                  minWidth: { xs: 36, md: 40 },
+                  height: { xs: 36, md: 40 },
                   '&:hover': {
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
@@ -673,33 +1177,35 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                   transition: 'all 0.3s ease',
                 }}
               >
-                <AttachFileIcon />
+                <AttachFileIcon fontSize={isMobile ? 'small' : 'medium'} />
               </IconButton>
             </Tooltip>
 
             {/* Send or Voice Button */}
-            {messageInput.trim() ? (
+            {messageInput.trim() || attachedFiles.length > 0 ? (
               <Zoom in timeout={200}>
                 <IconButton
                   type="submit"
                   sx={{
-                    bgcolor: theme.palette.primary.main,
+                    backgroundColor: '#3b82f6',
                     color: 'white',
-                    width: 48,
-                    height: 48,
+                    width: { xs: 40, md: 48 },
+                    height: { xs: 40, md: 48 },
+                    minWidth: { xs: 40, md: 48 },
+                    borderRadius: '50%',
                     '&:hover': {
-                      bgcolor: theme.palette.primary.dark,
+                      backgroundColor: '#2563eb',
                       transform: 'scale(1.05)',
-                      boxShadow: theme.shadows[8],
+                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
                     },
                     '&:active': {
                       transform: 'scale(0.95)',
                     },
                     transition: 'all 0.2s ease',
-                    boxShadow: theme.shadows[6],
+                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.2)',
                   }}
                 >
-                  <SendIcon />
+                  <SendIcon fontSize={isMobile ? 'small' : 'medium'} />
                 </IconButton>
               </Zoom>
             ) : (
@@ -707,8 +1213,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                 <IconButton
                   sx={{ 
                     color: 'text.secondary',
-                    width: 48,
-                    height: 48,
+                    width: { xs: 40, md: 48 },
+                    height: { xs: 40, md: 48 },
+                    minWidth: { xs: 40, md: 48 },
                     '&:hover': {
                       bgcolor: alpha(theme.palette.primary.main, 0.1),
                       color: theme.palette.primary.main,
@@ -717,7 +1224,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <MicIcon />
+                  <MicIcon fontSize={isMobile ? 'small' : 'medium'} />
                 </IconButton>
               </Tooltip>
             )}
@@ -725,7 +1232,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
         </Box>
         
         {/* Character count */}
-        <Fade in={messageInput.length > UI_CONSTANTS.MAX_MESSAGE_LENGTH * 0.7} timeout={300}>
+        {messageInput.length > UI_CONSTANTS.MAX_MESSAGE_LENGTH * 0.7 && (
           <Typography
             variant="caption"
             color={messageInput.length > UI_CONSTANTS.MAX_MESSAGE_LENGTH * 0.9 ? 'error' : 'text.secondary'}
@@ -740,7 +1247,317 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation }) => {
           >
             {messageInput.length}/{UI_CONSTANTS.MAX_MESSAGE_LENGTH}
           </Typography>
-        </Fade>
+        )}
+
+        {/* Hidden File Input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          multiple
+          accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,.csv,.zip,.rar"
+          style={{ display: 'none' }}
+        />
+
+        {/* File Preview Dialog */}
+        <Dialog
+          open={filePreviewOpen}
+          onClose={() => setFilePreviewOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              bgcolor: isDarkMode ? '#2a3942' : 'background.paper',
+              borderRadius: 2,
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: isDarkMode ? '#e9edef' : 'text.primary',
+          }}>
+            <AttachFileIcon />
+            Send Files ({attachedFiles.length})
+          </DialogTitle>
+          
+          <DialogContent>
+            <List>
+              {attachedFiles.map((file, index) => {
+                const isImage = file.type.startsWith('image/');
+                const isDocument = file.type.includes('pdf') || file.type.includes('document') || file.type.includes('text');
+                
+                return (
+                  <ListItem 
+                    key={`${file.name}-${file.size}-${index}`}
+                    sx={{ 
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      borderRadius: 1,
+                      mb: 1,
+                    }}
+                  >
+                    <ListItemIcon>
+                      {isImage ? (
+                        <ImageIcon color="primary" />
+                      ) : isDocument ? (
+                        <DocumentIcon color="primary" />
+                      ) : (
+                        <FileIcon color="primary" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={file.name}
+                      secondary={formatFileSize(file.size)}
+                      primaryTypographyProps={{
+                        sx: { 
+                          color: isDarkMode ? '#e9edef' : 'text.primary',
+                          fontWeight: 500,
+                        }
+                      }}
+                      secondaryTypographyProps={{
+                        sx: { color: isDarkMode ? '#8696a0' : 'text.secondary' }
+                      }}
+                    />
+                    <ListItemSecondaryAction>
+                      <IconButton 
+                        edge="end" 
+                        onClick={() => handleRemoveFile(index)}
+                        size="small"
+                        sx={{ 
+                          color: 'error.main',
+                          '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) }
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                );
+              })}
+            </List>
+            
+            {messageInput.trim() && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, color: isDarkMode ? '#e9edef' : 'text.primary' }}>
+                  Message:
+                </Typography>
+                <Paper 
+                  sx={{ 
+                    p: 2, 
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    borderRadius: 1,
+                  }}
+                >
+                  <Typography 
+                    variant="body2" 
+                    sx={{ color: isDarkMode ? '#e9edef' : 'text.primary' }}
+                  >
+                    {messageInput}
+                  </Typography>
+                </Paper>
+              </Box>
+            )}
+          </DialogContent>
+          
+          <DialogActions sx={{ p: 2, gap: 1 }}>
+            <Button 
+              onClick={() => setFilePreviewOpen(false)}
+              sx={{ color: isDarkMode ? '#8696a0' : 'text.secondary' }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSendWithFiles}
+              variant="contained"
+              startIcon={<SendIcon />}
+              disabled={attachedFiles.length === 0}
+              sx={{
+                bgcolor: theme.palette.primary.main,
+                '&:hover': { bgcolor: theme.palette.primary.dark },
+                borderRadius: 2,
+              }}
+            >
+              Send
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Header Menu */}
+        <Menu
+          anchorEl={headerMenuAnchor}
+          open={Boolean(headerMenuAnchor)}
+          onClose={handleHeaderMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          PaperProps={{
+            sx: {
+              bgcolor: isDarkMode ? '#2a3942' : 'background.paper',
+              borderRadius: 2,
+              minWidth: 200,
+            }
+          }}
+        >
+          <MenuItem 
+            onClick={handleDeleteAllMessages}
+            sx={{ 
+              color: 'error.main',
+              '&:hover': { 
+                bgcolor: alpha(theme.palette.error.main, 0.1) 
+              }
+            }}
+          >
+            <ListItemIcon>
+              <DeleteSweepIcon fontSize="small" color="error" />
+            </ListItemIcon>
+            <ListItemText>Delete All Messages</ListItemText>
+          </MenuItem>
+        </Menu>
+
+        {/* Delete All Messages Confirmation Dialog */}
+        <Dialog
+          open={deleteAllDialogOpen}
+          onClose={() => setDeleteAllDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              bgcolor: isDarkMode ? '#2a3942' : 'background.paper',
+              borderRadius: 2,
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: isDarkMode ? '#e9edef' : 'text.primary',
+          }}>
+            <DeleteSweepIcon color="error" />
+            Delete All Messages
+          </DialogTitle>
+          
+          <DialogContent>
+            <Typography sx={{ color: isDarkMode ? '#e9edef' : 'text.primary' }}>
+              Are you sure you want to permanently delete all messages in this conversation? 
+              This action will completely remove all messages from the database and cannot be undone. 
+              All participants will see an empty conversation.
+            </Typography>
+            <Typography sx={{ 
+              color: isDarkMode ? '#8696a0' : 'text.secondary', 
+              mt: 2, 
+              fontStyle: 'italic',
+              fontSize: '0.9rem' 
+            }}>
+              Note: This is different from deleting individual messages, which show "This message was deleted". 
+              Clear All will completely remove all message history.
+            </Typography>
+          </DialogContent>
+          
+          <DialogActions sx={{ p: 2, gap: 1 }}>
+            <Button 
+              onClick={() => setDeleteAllDialogOpen(false)}
+              sx={{ color: isDarkMode ? '#8696a0' : 'text.secondary' }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmDeleteAllMessages}
+              variant="contained"
+              color="error"
+              startIcon={<DeleteSweepIcon />}
+              sx={{
+                '&:hover': { bgcolor: theme.palette.error.dark },
+                borderRadius: 2,
+              }}
+            >
+              Delete All
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Forward Message Dialog */}
+        <Dialog
+          open={forwardDialogOpen}
+          onClose={() => setForwardDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              bgcolor: isDarkMode ? 'grey.900' : 'background.paper',
+              color: isDarkMode ? 'white' : 'text.primary',
+              borderRadius: 3,
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            color: isDarkMode ? 'white' : 'text.primary',
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          }}>
+            Forward Message To
+          </DialogTitle>
+          <DialogContent sx={{ p: 0 }}>
+            <List>
+              {rooms
+                .filter(room => room && room._id !== currentRoom) // Don't show current room and filter null rooms
+                .map((room) => {
+                  if (!room || !room.name) return null; // Skip rooms with missing data
+                  
+                  return (
+                    <ListItem 
+                      key={room._id}
+                      onClick={() => handleForwardToRoom(room._id)}
+                      sx={{ 
+                        cursor: 'pointer',
+                        '&:hover': { 
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        },
+                        borderBottom: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
+                      }}
+                    >
+                      <ListItemIcon>
+                        <Avatar sx={{ 
+                          width: 40, 
+                          height: 40,
+                          bgcolor: theme.palette.primary.main,
+                        }}>
+                          {room.type === 'group' ? <GroupIcon /> : (room.name || 'U').charAt(0).toUpperCase()}
+                        </Avatar>
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={room.name || 'Unknown Room'}
+                        secondary={room.type === 'group' ? `${room.members?.length || 0} members` : 'Direct message'}
+                        primaryTypographyProps={{
+                          color: isDarkMode ? 'white' : 'text.primary',
+                          fontWeight: 500,
+                        }}
+                        secondaryTypographyProps={{
+                          color: isDarkMode ? 'grey.400' : 'text.secondary',
+                        }}
+                      />
+                    </ListItem>
+                  );
+                })}
+            </List>
+          </DialogContent>
+          <DialogActions sx={{ 
+            p: 2,
+            borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          }}>
+            <Button 
+              onClick={() => setForwardDialogOpen(false)}
+              sx={{ color: isDarkMode ? 'grey.300' : 'text.secondary' }}
+            >
+              Cancel
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Paper>
     </Box>
   );

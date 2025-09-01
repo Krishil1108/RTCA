@@ -19,10 +19,7 @@ import {
   Avatar,
   Card,
   CardContent,
-  Slide,
-  Fade,
   useTheme,
-  alpha,
   Chip,
 } from '@mui/material';
 import {
@@ -109,7 +106,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          bgcolor: '#128c7e',
+          bgcolor: theme.palette.primary.main,
           color: 'white',
         }}
       >
@@ -221,8 +218,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} variant="contained" sx={{
-          bgcolor: '#128c7e',
-          '&:hover': { bgcolor: '#075e54' },
+          bgcolor: theme.palette.primary.main,
+          '&:hover': { bgcolor: theme.palette.primary.dark },
         }}>
           Done
         </Button>

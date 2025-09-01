@@ -15,8 +15,6 @@ import {
   InputAdornment,
   TextField,
   Divider,
-  Fade,
-  Slide,
   useTheme,
   alpha,
 } from '@mui/material';
@@ -196,39 +194,35 @@ const WhatsAppChatList: React.FC<WhatsAppChatListProps> = ({ onChatSelect }) => 
             textAlign: 'center',
           }}
         >
-          <Fade in timeout={500}>
-            <Box>
-              <ChatIcon sx={{ 
-                fontSize: 80, 
-                color: alpha(theme.palette.primary.main, 0.3), 
-                mb: 2 
-              }} />
-              <Typography variant="h6" color="text.primary" gutterBottom>
-                {searchQuery ? 'No results found' : 'No conversations yet'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {searchQuery 
-                  ? 'Try searching with different keywords'
-                  : 'Start a new conversation to begin chatting'
+          <Box>
+            <ChatIcon sx={{ 
+              fontSize: 80, 
+              color: alpha(theme.palette.primary.main, 0.3), 
+              mb: 2 
+            }} />
+            <Typography variant="h6" color="text.primary" gutterBottom>
+              {searchQuery ? 'No results found' : 'No conversations yet'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              {searchQuery 
+                ? 'Try searching with different keywords'
+                : 'Start a new conversation to begin chatting'
                 }
               </Typography>
               {!searchQuery && (
-                <Fade in timeout={1000}>
-                  <Chip
-                    label="Start New Chat"
-                    onClick={() => setStartConversationOpen(true)}
-                    sx={{
-                      bgcolor: theme.palette.primary.main,
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: theme.palette.primary.dark,
-                      },
-                    }}
-                  />
-                </Fade>
+                <Chip
+                  label="Start New Chat"
+                  onClick={() => setStartConversationOpen(true)}
+                  sx={{
+                    bgcolor: theme.palette.primary.main,
+                    color: 'white',
+                    '&:hover': {
+                      bgcolor: theme.palette.primary.dark,
+                    },
+                  }}
+                />
               )}
             </Box>
-          </Fade>
         </Box>
       ) : (
         <List sx={{ flex: 1, overflow: 'auto', py: 0 }}>
@@ -241,19 +235,14 @@ const WhatsAppChatList: React.FC<WhatsAppChatListProps> = ({ onChatSelect }) => 
             const isOnline = isUserOnline(room);
 
             return (
-              <Slide
+              <ListItem
                 key={room._id}
-                direction="right"
-                in
-                timeout={300 + index * 100}
-              >
-                <ListItem
-                  disablePadding
-                  sx={{
-                    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                    '&:hover': {
-                      bgcolor: alpha(theme.palette.primary.main, 0.05),
-                    },
+                disablePadding
+                sx={{
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  },
                   }}
                 >
                   <ListItemButton
@@ -381,7 +370,6 @@ const WhatsAppChatList: React.FC<WhatsAppChatListProps> = ({ onChatSelect }) => 
                     </Box>
                   </ListItemButton>
                 </ListItem>
-              </Slide>
             );
           })}
         </List>

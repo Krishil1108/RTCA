@@ -20,33 +20,56 @@ export const useWhatsAppTheme = () => {
   return context;
 };
 
-// WhatsApp-like color schemes
-const whatsappLightTheme = createTheme({
+// Professional color schemes
+const professionalLightTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#128c7e',
-      light: '#25d366',
-      dark: '#075e54',
+      main: '#3b82f6',
+      light: '#60a5fa',
+      dark: '#2563eb',
     },
     secondary: {
-      main: '#25d366',
+      main: '#6366f1',
+      light: '#8b5cf6',
+      dark: '#4f46e5',
     },
     background: {
-      default: '#f0f2f5',
+      default: '#f8fafc',
       paper: '#ffffff',
     },
     text: {
-      primary: '#111b21',
-      secondary: '#667781',
+      primary: '#1e293b',
+      secondary: '#64748b',
     },
-    divider: '#e9edef',
+    divider: '#e2e8f0',
+    error: {
+      main: '#ef4444',
+      light: '#f87171',
+      dark: '#dc2626',
+    },
+    warning: {
+      main: '#f59e0b',
+      light: '#fbbf24',
+      dark: '#d97706',
+    },
+    success: {
+      main: '#10b981',
+      light: '#34d399',
+      dark: '#059669',
+    },
+    info: {
+      main: '#3b82f6',
+      light: '#60a5fa',
+      dark: '#2563eb',
+    },
   },
   components: {
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#128c7e',
+          backgroundColor: '#3b82f6',
+          color: '#ffffff',
         },
       },
     },
@@ -54,76 +77,21 @@ const whatsappLightTheme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: '#ffffff',
+          borderRadius: '8px',
         },
       },
     },
-  },
-});
-
-const whatsappDarkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: '#00a884',
-      light: '#25d366',
-      dark: '#005c4b',
-    },
-    secondary: {
-      main: '#25d366',
-    },
-    background: {
-      default: '#0b141a',
-      paper: '#202c33',
-    },
-    text: {
-      primary: '#e9edef',
-      secondary: '#8696a0',
-    },
-    divider: '#313a42',
-  },
-  components: {
-    MuiAppBar: {
+    MuiButton: {
       styleOverrides: {
         root: {
-          backgroundColor: '#202c33',
+          borderRadius: '6px',
+          textTransform: 'none',
+          fontWeight: 500,
         },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#202c33',
-        },
-      },
-    },
-    MuiDialog: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: '#202c33',
-        },
-      },
-    },
-    MuiMenu: {
-      styleOverrides: {
-        paper: {
-          backgroundColor: '#202c33',
-        },
-      },
-    },
-    MuiListItem: {
-      styleOverrides: {
-        root: {
+        contained: {
+          boxShadow: '0 2px 8px rgba(59, 130, 246, 0.2)',
           '&:hover': {
-            backgroundColor: '#2a3942',
-          },
-        },
-      },
-    },
-    MuiListItemButton: {
-      styleOverrides: {
-        root: {
-          '&:hover': {
-            backgroundColor: '#2a3942',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
           },
         },
       },
@@ -132,16 +100,126 @@ const whatsappDarkTheme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            backgroundColor: '#2a3942',
-            '& fieldset': {
-              borderColor: '#3b4a54',
-            },
-            '&:hover fieldset': {
-              borderColor: '#54656f',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: '#00a884',
-            },
+            borderRadius: '6px',
+          },
+        },
+      },
+    },
+  },
+});
+
+const professionalDarkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#3b82f6',
+      light: '#60a5fa',
+      dark: '#1d4ed8',
+    },
+    secondary: {
+      main: '#6366f1',
+      light: '#8b5cf6',
+      dark: '#4338ca',
+    },
+    background: {
+      default: '#0f172a',
+      paper: '#1e293b',
+    },
+    text: {
+      primary: '#f1f5f9',
+      secondary: '#94a3b8',
+    },
+    divider: '#334155',
+    error: {
+      main: '#ef4444',
+      light: '#f87171',
+      dark: '#dc2626',
+    },
+    warning: {
+      main: '#f59e0b',
+      light: '#fbbf24',
+      dark: '#d97706',
+    },
+    success: {
+      main: '#10b981',
+      light: '#34d399',
+      dark: '#059669',
+    },
+    info: {
+      main: '#3b82f6',
+      light: '#60a5fa',
+      dark: '#2563eb',
+    },
+  },
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1e293b',
+          color: '#f1f5f9',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1e293b',
+          borderRadius: '8px',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: '6px',
+          textTransform: 'none',
+          fontWeight: 500,
+        },
+        contained: {
+          boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+          '&:hover': {
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '6px',
+          },
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1e293b',
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1e293b',
+        },
+      },
+    },
+    MuiListItem: {
+      styleOverrides: {
+        root: {
+          '&:hover': {
+            backgroundColor: '#334155',
+          },
+        },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          '&:hover': {
+            backgroundColor: '#334155',
           },
         },
       },
@@ -211,7 +289,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     localStorage.setItem('whatsapp-theme', mode);
   };
 
-  const currentTheme = isDarkMode ? whatsappDarkTheme : whatsappLightTheme;
+  const currentTheme = isDarkMode ? professionalDarkTheme : professionalLightTheme;
 
   return (
     <ThemeContext.Provider value={{ themeMode, setThemeMode, isDarkMode }}>

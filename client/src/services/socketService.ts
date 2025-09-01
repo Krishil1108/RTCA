@@ -223,6 +223,13 @@ class SocketService {
     }
   }
 
+  // Messages cleared event
+  onMessagesCleared(callback: (data: { roomId: string; clearedBy: string; clearedByName: string; timestamp: Date }) => void): void {
+    if (this.socket) {
+      this.socket.on('messages_cleared', callback);
+    }
+  }
+
   // Event cleanup
   off(event: string, callback?: (...args: any[]) => void): void {
     if (this.socket) {

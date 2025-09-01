@@ -347,4 +347,73 @@ router.get('/search', async (req, res) => {
   }
 });
 
+// @route   DELETE /api/chat/rooms/:roomId/messages
+// @desc    Delete all messages in a room
+// @access  Private
+router.delete('/rooms/:roomId/messages', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user._id;
+
+    // Check if room exists and user is a member
+    const room = await Room.findById(roomId);
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    // Check if user is a member of the room
+    const isMember = room.members.some(member => member.user.toString() === userId.toString());
+    if (!isMember) {
+      return res.status(403).json({ message: 'You are not a member of this room' });
+    }
+
+    // For direct conversations, only allow if user is one of the two members
+    // For group chats, you might want to add admin check here
+    if (room.type === 'direct') {
+      // In direct chat, both users can clear messages - permanently delete them
+      const result = await Message.deleteMany({ room: roomId });
+
+      // Emit socket event to notify all users in the room
+      const io = req.app.get('io');
+      if (io) {
+        io.to(roomId).emit('messages_cleared', {
+          roomId,
+          clearedBy: req.user._id,
+          clearedByName: req.user.name,
+          timestamp: new Date()
+        });
+      }
+
+      res.json({ 
+        message: 'All messages cleared successfully',
+        deletedCount: result.deletedCount
+      });
+    } else {
+      // For group chats, you might want to check admin permissions
+      // Permanently delete all messages in the group
+      const result = await Message.deleteMany({ room: roomId });
+
+      // Emit socket event to notify all users in the room
+      const io = req.app.get('io');
+      if (io) {
+        io.to(roomId).emit('messages_cleared', {
+          roomId,
+          clearedBy: req.user._id,
+          clearedByName: req.user.name,
+          timestamp: new Date()
+        });
+      }
+
+      res.json({ 
+        message: 'All messages cleared successfully',
+        deletedCount: result.deletedCount
+      });
+    }
+
+  } catch (error) {
+    console.error('Clear messages error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

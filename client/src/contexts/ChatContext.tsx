@@ -3,6 +3,7 @@ import { Room, Message } from '../services/chatService';
 import { TypingData, UserStatusData } from '../services/socketService';
 import socketService from '../services/socketService';
 import chatService from '../services/chatService';
+import api from '../services/api';
 
 interface ChatState {
   rooms: Room[];
@@ -62,16 +63,28 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
     case 'SET_CURRENT_ROOM':
       return { ...state, currentRoom: action.payload };
     case 'SET_MESSAGES':
+      // Deduplicate messages by ID when setting them
+      const deduplicatedMessages = action.payload.messages.filter((message, index, self) => 
+        index === self.findIndex(m => m._id === message._id)
+      );
+      
       return {
         ...state,
         messages: {
           ...state.messages,
-          [action.payload.roomId]: action.payload.messages,
+          [action.payload.roomId]: deduplicatedMessages,
         },
       };
     case 'ADD_MESSAGE':
       const { roomId, message } = action.payload;
       const existingMessages = state.messages[roomId] || [];
+      
+      // Check if message already exists to prevent duplicates
+      const messageExists = existingMessages.some(m => m._id === message._id);
+      if (messageExists) {
+        return state; // Don't add duplicate message
+      }
+      
       return {
         ...state,
         messages: {
@@ -129,6 +142,7 @@ interface ChatContextType extends ChatState {
   sendMessage: (content: string, messageType?: string, replyTo?: string) => void;
   editMessage: (messageId: string, content: string) => void;
   deleteMessage: (messageId: string) => void;
+  clearMessages: (roomId: string) => Promise<void>;
   joinRoom: (roomId: string) => void;
   leaveRoom: (roomId: string) => void;
   setCurrentRoom: (roomId: string | null) => void;
@@ -229,6 +243,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           break;
         }
       }
+    });
+
+    // Messages cleared event
+    socketService.onMessagesCleared((data) => {
+      const { roomId } = data;
+      dispatch({ type: 'CLEAR_MESSAGES', payload: roomId });
     });
   }, [state.typingUsers, state.currentRoom, state.messages]);
 
@@ -353,6 +373,24 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     socketService.deleteMessage(messageId);
   }, []);
 
+  // Clear all messages in a room
+  const clearMessages = useCallback(async (roomId: string) => {
+    try {
+      // Call API to delete all messages from backend using api service
+      const response = await api.delete(`/chat/rooms/${roomId}/messages`);
+
+      if (response.status === 200) {
+        // Clear messages from frontend state
+        dispatch({ type: 'CLEAR_MESSAGES', payload: roomId });
+      } else {
+        throw new Error('Failed to clear messages');
+      }
+    } catch (error) {
+      console.error('Error clearing messages:', error);
+      throw error;
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -370,6 +408,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     sendMessage,
     editMessage,
     deleteMessage,
+    clearMessages,
     joinRoom,
     leaveRoom,
     setCurrentRoom,
