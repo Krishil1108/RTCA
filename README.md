@@ -1,22 +1,24 @@
-# Real-Time Chat Application (RTCA)
+# Arizta - Modern Real-Time Chat Application
 
-[![GitHub Repository](https://img.shields.io/badge/GitHub-RTCA-blue?style=flat-square&logo=github)](https://github.com/Krishil1108/RTCA)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Arizta-blue?style=flat-square&logo=github)](https://github.com/Krishil1108/RTCA)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=flat-square&logo=node.js)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://reactjs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Database-green?style=flat-square&logo=mongodb)](https://mongodb.com/)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-Real--time-orange?style=flat-square&logo=socket.io)](https://socket.io/)
 
-A full-stack real-time chat application built with Node.js, Express, Socket.IO, React, and MongoDB. Features Gmail authentication, real-time messaging, and a responsive Material-UI design.
+**Arizta** is a cutting-edge real-time chat application built with Node.js, Express, Socket.IO, React, and MongoDB. Experience seamless communication with Gmail authentication, glassmorphism UI design, and advanced messaging features.
 
 ## Features
 
 - 🔐 Gmail OAuth Authentication
 - 💬 Real-time messaging with Socket.IO
-- 🎨 Dynamic responsive UI
+- 🎨 Glassmorphism UI with modern design
 - 👥 User presence indicators
-- 📱 Mobile-friendly design
-- 🌙 Dark/Light theme support
+- 📱 Mobile-friendly responsive design
+- 🌙 Dark/Light theme support with smooth transitions
 - 💾 Message persistence with MongoDB
+- ✨ Advanced message interactions (reply, edit, delete)
+- 🚀 Performance optimized with Material-UI
 
 ## Tech Stack
 

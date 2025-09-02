@@ -1,244 +1,305 @@
 import React, { useState } from 'react';
 import {
-  Box,
-  Container,
   Paper,
   Typography,
   Button,
-  Card,
-  CardContent,
-  Avatar,
-  Divider,
+  Box,
+  TextField,
   Alert,
   CircularProgress,
+  IconButton,
 } from '@mui/material';
-import { Google as GoogleIcon, Chat as ChatIcon, Science as DemoIcon } from '@mui/icons-material';
-import { GOOGLE_OAUTH_URL } from '../config/constants';
-import { useAuth } from '../contexts/AuthContext';
+import { 
+  Google as GoogleIcon, 
+  Facebook as FacebookIcon,
+} from '@mui/icons-material';
 import authService from '../services/authService';
-import DebugAuth from '../components/DebugAuth';
 
 const LoginPage: React.FC = () => {
-  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
   const handleGoogleLogin = () => {
-    window.location.href = GOOGLE_OAUTH_URL;
-  };
-
-  const handleDemoLogin = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      
-      const response = await authService.demoLogin();
-      await login(response.token);
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Demo login failed');
-    } finally {
-      setLoading(false);
-    }
+    window.location.href = authService.getGoogleAuthUrl();
   };
 
   return (
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #74b9ff 0%, #0984e3 50%, #a29bfe 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 2,
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Cpath d=\'M20 30 Q30 20 40 30 T60 30 T80 30\' fill=\'none\' stroke=\'rgba(255,255,255,0.1)\' stroke-width=\'2\'/%3E%3C/svg%3E")',
+          backgroundSize: '200px 200px',
+          animation: 'float 20s ease-in-out infinite',
+        },
+        '@keyframes float': {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
       }}
     >
-      <Container maxWidth="sm">
-        <Card
-          elevation={8}
+      {/* Decorative elements */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '10%',
+          left: '10%',
+          width: 100,
+          height: 100,
+          background: 'linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
+          borderRadius: '50%',
+          filter: 'blur(1px)',
+          animation: 'float 15s ease-in-out infinite reverse',
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: '15%',
+          right: '15%',
+          width: 80,
+          height: 80,
+          background: 'linear-gradient(45deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+          borderRadius: '50%',
+          filter: 'blur(1px)',
+          animation: 'float 18s ease-in-out infinite',
+        }}
+      />
+
+      <Paper
+        elevation={24}
+        sx={{
+          padding: { xs: 3, sm: 4, md: 5 },
+          maxWidth: 420,
+          width: '100%',
+          borderRadius: 3,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <Box
           sx={{
-            borderRadius: 4,
-            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            mb: 4,
           }}
         >
-          <Box
+          <Typography
+            variant="h4"
+            component="h1"
             sx={{
-              background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
-              color: 'white',
-              py: 4,
-              px: 3,
-              textAlign: 'center',
+              fontWeight: 600,
+              color: '#2d3748',
+              mb: 1,
+              fontSize: { xs: '1.75rem', sm: '2rem' },
             }}
           >
-            <Avatar
-              sx={{
-                width: 80,
-                height: 80,
-                margin: '0 auto 16px',
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              }}
-            >
-              <ChatIcon sx={{ fontSize: 40 }} />
-            </Avatar>
-            <Typography variant="h3" component="h1" gutterBottom fontWeight="bold">
-              RTCA
-            </Typography>
-            <Typography variant="h6" component="h2" sx={{ opacity: 0.9 }}>
-              Real-Time Chat Application
-            </Typography>
-          </Box>
-
-          <CardContent sx={{ p: 4 }}>
-            <Typography
-              variant="h5"
-              component="h3"
-              gutterBottom
-              textAlign="center"
-              color="textPrimary"
-            >
-              Welcome Back!
-            </Typography>
-            <Typography
-              variant="body1"
-              textAlign="center"
-              color="textSecondary"
-              paragraph
-            >
-              Sign in with your Gmail account to start chatting with your team in real-time.
-            </Typography>
-
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-
-            <Box sx={{ mt: 4, mb: 3 }}>
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                startIcon={<GoogleIcon />}
-                onClick={handleGoogleLogin}
-                sx={{
-                  py: 1.5,
-                  fontSize: '1.1rem',
-                  backgroundColor: '#db4437',
-                  '&:hover': {
-                    backgroundColor: '#c23321',
-                  },
-                  borderRadius: 2,
-                }}
-              >
-                Sign in with Gmail
-              </Button>
-
-              <Divider sx={{ my: 2 }}>
-                <Typography variant="body2" color="textSecondary">
-                  OR
-                </Typography>
-              </Divider>
-
-              <Button
-                variant="outlined"
-                size="large"
-                fullWidth
-                startIcon={loading ? <CircularProgress size={20} /> : <DemoIcon />}
-                onClick={handleDemoLogin}
-                disabled={loading}
-                sx={{
-                  py: 1.5,
-                  fontSize: '1.1rem',
-                  borderRadius: 2,
-                }}
-              >
-                {loading ? 'Connecting...' : 'Try Demo Mode'}
-              </Button>
-            </Box>
-
-            <Alert severity="info" sx={{ mt: 2 }}>
-              <Typography variant="caption">
-                <strong>Demo Mode:</strong> Test the application without setting up OAuth. 
-                For Gmail authentication, you need to configure Google Cloud credentials 
-                (see GOOGLE_OAUTH_SETUP.md).
-              </Typography>
-            </Alert>
-
-            <Typography
-              variant="caption"
-              display="block"
-              textAlign="center"
-              color="textSecondary"
-              sx={{ mt: 2 }}
-            >
-              By signing in, you agree to our Terms of Service and Privacy Policy
-            </Typography>
-          </CardContent>
-        </Card>
-
-        {/* Debug Component - only in development */}
-        {process.env.NODE_ENV === 'development' && <DebugAuth />}
-
-        {/* Features Section */}
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Typography variant="h6" gutterBottom color="white" sx={{ opacity: 0.9 }}>
-            Features
+            Sign In
           </Typography>
-          <Box
+        </Box>
+
+        {error && (
+          <Alert
+            severity="error"
             sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
-              gap: 2,
-              mt: 2,
+              width: '100%',
+              mb: 3,
+              borderRadius: 2,
             }}
           >
-            <Paper
-              elevation={2}
-              sx={{
-                p: 2,
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            {error}
+          </Alert>
+        )}
+
+        <Box sx={{ mb: 3 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="username or email"
+            disabled
+            sx={{
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
-              }}
-            >
-              <Typography variant="subtitle2" gutterBottom color="primary">
-                🚀 Real-Time Messaging
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Instant messaging with live typing indicators
-              </Typography>
-            </Paper>
-            <Paper
-              elevation={2}
-              sx={{
-                p: 2,
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: '#f7fafc',
+                '& fieldset': {
+                  borderColor: '#e2e8f0',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#cbd5e0',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                },
+              },
+              '& .MuiInputBase-input': {
+                color: '#4a5568',
+                fontSize: '0.95rem',
+              },
+              '& .MuiInputBase-input::placeholder': {
+                color: '#a0aec0',
+                opacity: 1,
+              },
+            }}
+          />
+          <TextField
+            fullWidth
+            type="password"
+            variant="outlined"
+            placeholder="password"
+            disabled
+            sx={{
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
-              }}
-            >
-              <Typography variant="subtitle2" gutterBottom color="primary">
-                👥 Team Rooms
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Organize conversations by topics and teams
-              </Typography>
-            </Paper>
-            <Paper
-              elevation={2}
-              sx={{
-                p: 2,
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: 2,
-              }}
-            >
-              <Typography variant="subtitle2" gutterBottom color="primary">
-                📱 Responsive Design
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Works perfectly on desktop and mobile
-              </Typography>
-            </Paper>
-          </Box>
+                backgroundColor: '#f7fafc',
+                '& fieldset': {
+                  borderColor: '#e2e8f0',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#cbd5e0',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#667eea',
+                },
+              },
+              '& .MuiInputBase-input': {
+                color: '#4a5568',
+                fontSize: '0.95rem',
+              },
+              '& .MuiInputBase-input::placeholder': {
+                color: '#a0aec0',
+                opacity: 1,
+              },
+            }}
+          />
+          
+          <Button
+            fullWidth
+            variant="contained"
+            disabled
+            sx={{
+              py: 1.5,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontSize: '1rem',
+              fontWeight: 600,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+              opacity: 0.6,
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+              },
+            }}
+          >
+            SIGN IN
+          </Button>
         </Box>
-      </Container>
+
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            mb: 3,
+          }}
+        >
+          <Box sx={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+          <Typography
+            variant="body2"
+            sx={{
+              px: 2,
+              color: '#718096',
+              fontWeight: 500,
+            }}
+          >
+            Or login with
+          </Typography>
+          <Box sx={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 2,
+            mb: 4,
+          }}
+        >
+          <IconButton
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            sx={{
+              width: 50,
+              height: 50,
+              border: '1px solid #e2e8f0',
+              borderRadius: 2,
+              backgroundColor: '#ffffff',
+              color: '#db4437',
+              '&:hover': {
+                backgroundColor: '#f7fafc',
+                borderColor: '#cbd5e0',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            {loading ? <CircularProgress size={24} /> : <GoogleIcon />}
+          </IconButton>
+          
+          <IconButton
+            disabled
+            sx={{
+              width: 50,
+              height: 50,
+              border: '1px solid #e2e8f0',
+              borderRadius: 2,
+              backgroundColor: '#ffffff',
+              color: '#1877f2',
+              opacity: 0.5,
+              '&:hover': {
+                backgroundColor: '#f7fafc',
+                borderColor: '#cbd5e0',
+              },
+            }}
+          >
+            <FacebookIcon />
+          </IconButton>
+        </Box>
+
+        <Typography
+          variant="body2"
+          sx={{
+            textAlign: 'center',
+            color: '#718096',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            '&:hover': {
+              color: '#4a5568',
+            },
+          }}
+        >
+          Sign Up
+        </Typography>
+      </Paper>
     </Box>
   );
 };

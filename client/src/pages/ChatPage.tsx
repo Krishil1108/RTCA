@@ -12,7 +12,6 @@ import {
   Divider,
   Drawer,
   useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -36,7 +35,7 @@ const ChatPage: React.FC = () => {
   
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [startConversationOpen, setStartConversationOpen] = useState(false);
+  const [, setStartConversationOpen] = useState(false);
   const hasInitialized = useRef(false);
 
   // Initialize socket and load data
@@ -63,9 +62,8 @@ const ChatPage: React.FC = () => {
         hasInitialized.current = false; // Reset on error
       }
     };
-
     initialize();
-  }, []); // Remove dependencies to prevent infinite loop
+  }, [initializeSocket, loadRooms]); // Add missing dependencies
 
   // Set current room from URL
   useEffect(() => {

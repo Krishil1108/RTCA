@@ -1,6 +1,17 @@
-# Getting Started with Create React App
+# Arizta Client
+
+This is the frontend client for **Arizta**, a modern real-time chat application built with React and Material-UI.
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+## Features
+
+- ✨ Glassmorphism UI design
+- 🎨 Dark/Light theme support
+- 📱 Fully responsive design
+- ⚡ Real-time messaging
+- 🔐 Gmail OAuth authentication
+- 💬 Advanced message features
 
 ## Available Scripts
 

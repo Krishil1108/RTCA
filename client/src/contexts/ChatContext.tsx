@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
 import { Room, Message } from '../services/chatService';
-import { TypingData, UserStatusData } from '../services/socketService';
+import { TypingData } from '../services/socketService';
 import socketService from '../services/socketService';
 import chatService from '../services/chatService';
 import api from '../services/api';

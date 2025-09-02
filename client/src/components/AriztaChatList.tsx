@@ -11,37 +11,33 @@ import {
   Fab,
   Badge,
   Chip,
-  IconButton,
   InputAdornment,
   TextField,
-  Divider,
   useTheme,
   alpha,
 } from '@mui/material';
 import {
   Chat as ChatIcon,
-  Person as PersonIcon,
   Search as SearchIcon,
-  MoreVert as MoreVertIcon,
   PushPin as PushPinIcon,
   Group as GroupIcon,
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useWhatsAppTheme } from '../contexts/ThemeContext';
+import { useAriztaTheme } from '../contexts/ThemeContext';
 import { Room } from '../services/chatService';
 import StartConversation from './StartConversation';
 
-interface WhatsAppChatListProps {
+interface AriztaChatListProps {
   onChatSelect: (roomId: string) => void;
 }
 
-const WhatsAppChatList: React.FC<WhatsAppChatListProps> = ({ onChatSelect }) => {
+const AriztaChatList: React.FC<AriztaChatListProps> = ({ onChatSelect }) => {
   const { rooms, loadRooms, isLoading } = useChat();
   const { user } = useAuth();
   const theme = useTheme();
-  const { isDarkMode } = useWhatsAppTheme();
+  const { isDarkMode } = useAriztaTheme();
   const [startConversationOpen, setStartConversationOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -405,4 +401,4 @@ const WhatsAppChatList: React.FC<WhatsAppChatListProps> = ({ onChatSelect }) => 
   );
 };
 
-export default WhatsAppChatList;
+export default AriztaChatList;

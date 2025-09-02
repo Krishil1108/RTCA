@@ -5,7 +5,7 @@ import { ChatProvider } from './contexts/ChatContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import LoginPage from './pages/LoginPage';
 import ChatPage from './pages/ChatPage';
-import WhatsAppMainPage from './pages/WhatsAppMainPage';
+import AriztaMainPage from './pages/AriztaMainPage';
 import AuthSuccessPage from './pages/AuthSuccessPage';
 import AuthErrorPage from './pages/AuthErrorPage';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -57,7 +57,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ChatProvider>
-                    <WhatsAppMainPage />
+                    <AriztaMainPage />
                   </ChatProvider>
                 </ProtectedRoute>
               }
@@ -67,7 +67,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ChatProvider>
-                    <WhatsAppMainPage />
+                    <AriztaMainPage />
                   </ChatProvider>
                 </ProtectedRoute>
               }
@@ -87,7 +87,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ChatProvider>
-                    <WhatsAppMainPage />
+                    <AriztaMainPage />
                   </ChatProvider>
                 </ProtectedRoute>
               }

@@ -12,10 +12,10 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const useWhatsAppTheme = () => {
+export const useAriztaTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useWhatsAppTheme must be used within a ThemeProvider');
+    throw new Error('useAriztaTheme must be used within a ThemeProvider');
   }
   return context;
 };
@@ -62,6 +62,66 @@ const professionalLightTheme = createTheme({
       main: '#3b82f6',
       light: '#60a5fa',
       dark: '#2563eb',
+    },
+  },
+  typography: {
+    fontFamily: [
+      '"Kohinoor Devanagari"',
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+      '"Apple Color Emoji"',
+      '"Segoe UI Emoji"',
+      '"Segoe UI Symbol"',
+    ].join(','),
+    h1: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 600,
+    },
+    h2: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 600,
+    },
+    h3: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 600,
+    },
+    h4: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 600,
+    },
+    h5: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 600,
+    },
+    h6: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 600,
+    },
+    body1: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 400,
+    },
+    body2: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 400,
+    },
+    button: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 500,
+      textTransform: 'none',
+    },
+    caption: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 400,
+    },
+    overline: {
+      fontFamily: '"Kohinoor Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontWeight: 400,
     },
   },
   components: {
@@ -149,6 +209,72 @@ const professionalDarkTheme = createTheme({
       main: '#3b82f6',
       light: '#60a5fa',
       dark: '#2563eb',
+    },
+  },
+  typography: {
+    fontFamily: [
+      'Kohinoor Devanagari',
+      'Noto Sans Devanagari',
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+    ].join(','),
+    h1: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 600,
+    },
+    h2: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 600,
+    },
+    h3: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 500,
+    },
+    h4: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 500,
+    },
+    h5: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 500,
+    },
+    h6: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 500,
+    },
+    body1: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 400,
+    },
+    body2: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 400,
+    },
+    button: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 500,
+      textTransform: 'none',
+    },
+    caption: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 400,
+    },
+    overline: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 400,
+    },
+    subtitle1: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 500,
+    },
+    subtitle2: {
+      fontFamily: 'Kohinoor Devanagari, Noto Sans Devanagari, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 500,
     },
   },
   components: {
@@ -278,7 +404,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   // Load theme preference from localStorage
   useEffect(() => {
-    const savedTheme = localStorage.getItem('whatsapp-theme') as ThemeMode;
+    const savedTheme = localStorage.getItem('arizta-theme') as ThemeMode;
     if (savedTheme && ['light', 'dark', 'auto'].includes(savedTheme)) {
       setThemeModeState(savedTheme);
     }
@@ -286,7 +412,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
-    localStorage.setItem('whatsapp-theme', mode);
+    localStorage.setItem('arizta-theme', mode);
   };
 
   const currentTheme = isDarkMode ? professionalDarkTheme : professionalLightTheme;

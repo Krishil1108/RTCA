@@ -16,11 +16,7 @@ import {
   Typography,
   IconButton,
   Box,
-  Avatar,
-  Card,
-  CardContent,
   useTheme,
-  Chip,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -30,14 +26,12 @@ import {
   Security as PrivacyIcon,
   Storage as DataIcon,
   Help as HelpIcon,
-  Person as PersonIcon,
-  ChevronRight as ChevronRightIcon,
   Brightness4 as Brightness4Icon,
   Brightness7 as Brightness7Icon,
   BrightnessAuto as BrightnessAutoIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
-import { useWhatsAppTheme } from '../contexts/ThemeContext';
+import { useAriztaTheme } from '../contexts/ThemeContext';
 import ThemeSelectorDialog from './ThemeSelectorDialog';
 
 interface SettingsDialogProps {
@@ -47,7 +41,7 @@ interface SettingsDialogProps {
 
 const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
   const { user } = useAuth();
-  const { themeMode, isDarkMode } = useWhatsAppTheme();
+  const { themeMode } = useAriztaTheme();
   const theme = useTheme();
   const [notifications, setNotifications] = useState(user?.settings?.notifications ?? true);
   const [soundEnabled, setSoundEnabled] = useState(user?.settings?.soundEnabled ?? true);
@@ -66,18 +60,19 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onClose }) => {
     }
   };
 
-  const getThemeIcon = () => {
-    switch (themeMode) {
-      case 'light':
-        return <Brightness7Icon />;
-      case 'dark':
-        return <Brightness4Icon />;
-      case 'auto':
-        return <BrightnessAutoIcon />;
-      default:
-        return <BrightnessAutoIcon />;
-    }
-  };
+  // Commented out unused function to resolve ESLint warnings
+  // const getThemeIcon = () => {
+  //   switch (themeMode) {
+  //     case 'light':
+  //       return <Brightness7Icon />;
+  //     case 'dark':
+  //       return <Brightness4Icon />;
+  //     case 'auto':
+  //       return <BrightnessAutoIcon />;
+  //     default:
+  //       return <BrightnessAutoIcon />;
+  //   }
+  // };
 
   const handleNotificationChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setNotifications(event.target.checked);

@@ -17,7 +17,7 @@ import {
   DarkMode as DarkIcon,
   SettingsBrightness as AutoIcon,
 } from '@mui/icons-material';
-import { useWhatsAppTheme } from '../contexts/ThemeContext';
+import { useAriztaTheme } from '../contexts/ThemeContext';
 
 interface ThemeSelectorDialogProps {
   open: boolean;
@@ -25,7 +25,7 @@ interface ThemeSelectorDialogProps {
 }
 
 const ThemeSelectorDialog: React.FC<ThemeSelectorDialogProps> = ({ open, onClose }) => {
-  const { themeMode, setThemeMode } = useWhatsAppTheme();
+  const { themeMode, setThemeMode } = useAriztaTheme();
 
   const themeOptions = [
     {

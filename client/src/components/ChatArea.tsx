@@ -12,7 +12,6 @@ import {
   alpha,
   Zoom,
   Tooltip,
-  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -37,22 +36,19 @@ import {
   Phone as PhoneIcon,
   VideoCall as VideoCallIcon,
   Group as GroupIcon,
-  CheckCircle as CheckCircleIcon,
   InsertDriveFile as FileIcon,
   Image as ImageIcon,
   Description as DocumentIcon,
   Delete as DeleteIcon,
   DeleteSweep as DeleteSweepIcon,
-  Reply as ReplyIcon,
   ContentCopy as CopyIcon,
   Forward as ForwardIcon,
   SelectAll as SelectAllIcon,
   CheckBox as CheckBoxIcon,
-  CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon,
 } from '@mui/icons-material';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useWhatsAppTheme } from '../contexts/ThemeContext';
+import { useAriztaTheme } from '../contexts/ThemeContext';
 import { Message } from '../services/chatService';
 import socketService from '../services/socketService';
 import MessageComponent from './MessageComponent';
@@ -78,7 +74,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
   } = useChat();
 
   const { user } = useAuth();
-  const { isDarkMode } = useWhatsAppTheme();
+  const { isDarkMode } = useAriztaTheme();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -222,13 +218,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
     for (const file of attachedFiles) {
       // For now, we'll simulate file upload by sending file info as message
       // In a real app, you'd upload to a server and get a URL
-      const fileInfo = {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: file.lastModified,
-      };
-      
       const messageContent = `📎 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
       sendMessage(messageContent, 'file', replyingTo?._id);
     }
@@ -279,39 +268,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
     }
   };
 
-  // Message selection handlers
-  const handleMessageLongPress = (message: Message) => {
-    // Long press no longer triggers selection - it's handled by the MessageComponent's context menu
-    // This handler can be removed or used for other purposes
-  };
-
-  const handleMessageDoubleClick = (message: Message) => {
-    // Double click triggers message selection
-    setSelectedMessage(message);
-    setSelectedMessages(new Set([message._id]));
-    setIsMessageSelectionMode(true);
-  };
-
-  const handleMessageClick = (message: Message) => {
-    // Only handle clicks when already in selection mode
-    if (!isMessageSelectionMode) return;
-    
-    const newSelectedMessages = new Set(selectedMessages);
-    if (newSelectedMessages.has(message._id)) {
-      newSelectedMessages.delete(message._id);
-    } else {
-      newSelectedMessages.add(message._id);
-    }
-    setSelectedMessages(newSelectedMessages);
-    
-    // If no messages selected, exit selection mode
-    if (newSelectedMessages.size === 0) {
-      handleExitSelectionMode();
-    } else {
-      // Update the primary selected message to the most recently selected
-      setSelectedMessage(message);
-    }
-  };
+  // Removed unused message handlers since MessageComponent now only supports swipe-to-reply
 
   const handleSelectAllMessages = () => {
     if (currentRoom && messages[currentRoom]) {
@@ -331,26 +288,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
     setIsMessageSelectionMode(false);
   };
 
-  const handleReplyToSelected = () => {
-    if (selectedMessage) {
-      setReplyingTo(selectedMessage);
-      handleExitSelectionMode();
-      // Focus the input field
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 100);
-    }
-  };
+  // Commented out unused functions to resolve ESLint warnings
+  // const handleReplyToSelected = () => {
+  //   if (selectedMessage) {
+  //     setReplyingTo(selectedMessage);
+  //     handleExitSelectionMode();
+  //     setTimeout(() => {
+  //       if (inputRef.current) {
+  //         inputRef.current.focus();
+  //       }
+  //     }, 100);
+  //   }
+  // };
 
-  const handleCopySelectedMessage = () => {
-    if (selectedMessage) {
-      navigator.clipboard.writeText(selectedMessage.content);
-      handleExitSelectionMode();
-      // You could show a toast notification here
-    }
-  };
+  // const handleCopySelectedMessage = () => {
+  //   if (selectedMessage) {
+  //     navigator.clipboard.writeText(selectedMessage.content);
+  //     handleExitSelectionMode();
+  //   }
+  // };
 
   const handleDeleteSelectedMessage = () => {
     if (selectedMessages.size > 0) {
@@ -410,441 +366,608 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: isDarkMode ? '#0b141a' : '#f0f2f5',
-        backgroundImage: isDarkMode 
-          ? 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="100" height="100"%3E%3Cpath d="M0 0h100v100H0z" fill="%23182229"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")'
-          : 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="100" height="100"%3E%3Cpath d="M0 0h100v100H0z" fill="%23ffffff"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")',
-        overflow: 'hidden', // Prevent horizontal scrolling
-        maxWidth: '100%', // Ensure no overflow
+        position: 'relative',
+        overflow: 'hidden',
+        maxWidth: '100%',
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 50%, rgba(51, 65, 85, 0.9) 100%)'
+          : 'linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.9) 50%, rgba(226, 232, 240, 0.9) 100%)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: isDarkMode
+            ? 'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%)'
+            : 'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 50%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: isDarkMode
+            ? 'rgba(15, 23, 42, 0.3)'
+            : 'rgba(255, 255, 255, 0.4)',
+          backdropFilter: 'blur(1px)',
+          WebkitBackdropFilter: 'blur(1px)',
+          pointerEvents: 'none',
+          zIndex: 1,
+        },
+        '& > *': {
+          position: 'relative',
+          zIndex: 2,
+        },
       }}
     >
-      {/* Professional Chat Header */}
+      {/* Modern Chat Header */}
       <Paper
         elevation={0}
         sx={{
-          p: 2,
-          borderRadius: 0,
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          backgroundColor: isMessageSelectionMode 
-            ? alpha(theme.palette.primary.main, 0.1)
-            : theme.palette.background.paper,
-          color: isMessageSelectionMode 
-            ? theme.palette.primary.main 
-            : theme.palette.text.primary,
           position: 'relative',
+          background: isMessageSelectionMode 
+            ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.15)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`
+            : isDarkMode 
+              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
+          backdropFilter: 'blur(10px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(10px) saturate(160%)',
+          borderBottom: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
+          borderRadius: 0,
           overflow: 'hidden',
-          borderLeft: isMessageSelectionMode ? `3px solid ${theme.palette.primary.main}` : 'none',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: isMessageSelectionMode 
+              ? `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
+              : 'transparent',
+            transition: 'all 0.3s ease',
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: isDarkMode
+              ? 'rgba(255, 255, 255, 0.02)'
+              : 'rgba(0, 0, 0, 0.02)',
+            pointerEvents: 'none',
+          },
         }}
       >
-        {/* Mobile-Optimized Header Layout */}
         <Box sx={{ 
-          display: 'flex', 
-          flexDirection: isMobile ? 'column' : 'row', 
-          gap: isMobile ? 1 : 2 
+          px: isMobile ? 1.5 : 3,
+          py: isMobile ? 1 : 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? 1.5 : 2,
+          minHeight: isMobile ? 64 : 72,
         }}>
-          {/* Main Header Row */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+          {/* Left Section */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 1.5 }}>
             {/* Back Button for Mobile */}
-            <Tooltip title="Back to chats">
-              <IconButton
-                size="small"
-                onClick={onBackClick}
-                sx={{ 
-                  display: { xs: 'flex', md: 'none' },
-                  color: 'inherit',
-                  width: isMobile ? 36 : 40,
-                  height: isMobile ? 36 : 40,
-                  '&:hover': {
-                    bgcolor: theme.palette.action.hover,
-                  },
-                }}
-              >
-                <ArrowBackIcon sx={{ fontSize: isMobile ? 18 : 20 }} />
-              </IconButton>
-            </Tooltip>
-
-            {/* Enhanced Avatar with Status Indicator */}
-            <Box sx={{ position: 'relative' }}>
-              <Zoom in timeout={300}>
-                <Avatar 
-                  src={room?.type === 'direct' ? otherUser?.avatar : undefined}
+            {isMobile && (
+              <Tooltip title="Back to chats" arrow>
+                <IconButton
+                  onClick={onBackClick}
                   sx={{ 
-                    bgcolor: room?.type === 'group' 
-                      ? theme.palette.secondary.main 
-                      : theme.palette.primary.main, 
-                    width: isMobile ? 40 : 48, 
-                    height: isMobile ? 40 : 48,
-                    fontSize: isMobile ? '1rem' : '1.2rem',
-                    fontWeight: 600,
-                    border: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    boxShadow: theme.shadows[3],
-                    cursor: 'pointer',
+                    width: 44,
+                    height: 44,
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    color: theme.palette.primary.main,
                     '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.15),
                       transform: 'scale(1.05)',
                     },
-                    transition: 'all 0.2s ease',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
                 >
-                  {room?.type === 'direct' 
-                    ? otherUser?.name?.charAt(0).toUpperCase() 
-                    : <GroupIcon sx={{ fontSize: isMobile ? 18 : 20 }} />
-                  }
-                </Avatar>
-              </Zoom>
+                  <ArrowBackIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+              </Tooltip>
+            )}
+
+            {/* Enhanced Avatar with Modern Status */}
+            <Box sx={{ position: 'relative' }}>
+              <Avatar 
+                src={room?.type === 'direct' ? otherUser?.avatar : undefined}
+                sx={{ 
+                  width: isMobile ? 44 : 52,
+                  height: isMobile ? 44 : 52,
+                  background: room?.type === 'group' 
+                    ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
+                    : `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                  fontSize: isMobile ? '1.1rem' : '1.3rem',
+                  fontWeight: 700,
+                  border: `3px solid ${alpha(theme.palette.background.paper, 0.9)}`,
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                  cursor: 'pointer',
+                  '&:hover': {
+                    transform: 'scale(1.08)',
+                    boxShadow: `0 6px 20px ${alpha(theme.palette.primary.main, 0.35)}`,
+                  },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                {room?.type === 'direct' 
+                  ? otherUser?.name?.charAt(0).toUpperCase() 
+                  : <GroupIcon sx={{ fontSize: isMobile ? 22 : 26, color: 'white' }} />
+                }
+              </Avatar>
               
-              {/* Online Status Indicator */}
+              {/* Modern Online Status with Pulse Animation */}
               {room?.type === 'direct' && otherUser?.isOnline && (
                 <Box
                   sx={{
                     position: 'absolute',
-                    bottom: 1,
-                    right: 1,
-                    width: isMobile ? 10 : 14,
-                    height: isMobile ? 10 : 14,
+                    bottom: 2,
+                    right: 2,
+                    width: isMobile ? 12 : 16,
+                    height: isMobile ? 12 : 16,
                     borderRadius: '50%',
-                    bgcolor: '#4caf50',
-                    border: `2px solid ${theme.palette.background.paper}`,
-                    animation: 'pulse 2s infinite',
-                    '@keyframes pulse': {
-                      '0%': { transform: 'scale(1)', opacity: 1 },
-                      '50%': { transform: 'scale(1.2)', opacity: 0.8 },
-                      '100%': { transform: 'scale(1)', opacity: 1 },
+                    bgcolor: '#10b981',
+                    border: `2.5px solid ${theme.palette.background.paper}`,
+                    boxShadow: `0 0 0 2px ${alpha('#10b981', 0.3)}`,
+                    animation: 'onlinePulse 2s ease-in-out infinite',
+                    '@keyframes onlinePulse': {
+                      '0%, 100%': { 
+                        transform: 'scale(1)',
+                        boxShadow: `0 0 0 2px ${alpha('#10b981', 0.3)}`,
+                      },
+                      '50%': { 
+                        transform: 'scale(1.1)',
+                        boxShadow: `0 0 0 4px ${alpha('#10b981', 0.5)}`,
+                      },
                     },
                   }}
                 />
               )}
             </Box>
 
-            {/* User Info */}
-            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-              <Typography 
-                variant={isMobile ? "body1" : "h6"} 
-                sx={{ 
-                  fontWeight: isMessageSelectionMode ? 700 : 600,
-                  fontSize: isMobile ? (isMessageSelectionMode ? '1.1rem' : '0.95rem') : '1.1rem',
-                  color: isMessageSelectionMode 
-                    ? theme.palette.primary.main
-                    : 'inherit',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  cursor: 'pointer',
-                  '&:hover': {
-                    color: theme.palette.primary.main,
-                  },
-                  transition: 'color 0.2s ease',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {isMessageSelectionMode 
-                  ? selectedMessages.size > 0 
-                    ? `${selectedMessages.size} selected`
-                    : "Select messages"
-                  : (room?.type === 'direct' ? otherUser?.name : room?.name)
-                }
-                {room?.type === 'group' && !isMessageSelectionMode && !isMobile && (
-                  <Chip 
-                    label={`${room.members.length} members`}
-                    size="small"
-                    sx={{ 
-                      height: 20,
-                      fontSize: '0.65rem',
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+            {/* User Info with Modern Typography */}
+            <Box sx={{ flexGrow: 1, minWidth: 0, ml: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography 
+                  variant={isMobile ? "subtitle1" : "h6"}
+                  sx={{ 
+                    fontWeight: 700,
+                    fontSize: isMobile ? '1rem' : '1.25rem',
+                    color: isMessageSelectionMode 
+                      ? theme.palette.primary.main
+                      : isDarkMode ? '#e9edef' : '#1f2937',
+                    lineHeight: 1.2,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                    '&:hover': {
                       color: theme.palette.primary.main,
-                      fontWeight: 500,
-                    }}
-                  />
+                    },
+                    transition: 'color 0.2s ease',
+                  }}
+                >
+                  {isMessageSelectionMode 
+                    ? selectedMessages.size > 0 
+                      ? `${selectedMessages.size} selected`
+                      : "Select messages"
+                    : (room?.type === 'direct' ? otherUser?.name : room?.name)
+                  }
+                </Typography>
+
+                {/* Status Badges */}
+                {!isMessageSelectionMode && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {room?.type === 'group' && (
+                      <Chip 
+                        label={`${room.members.length}`}
+                        size="small"
+                        icon={<GroupIcon sx={{ fontSize: 14 }} />}
+                        sx={{ 
+                          height: 24,
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          bgcolor: alpha(theme.palette.secondary.main, 0.12),
+                          color: theme.palette.secondary.main,
+                          border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
+                          '& .MuiChip-icon': {
+                            fontSize: 14,
+                            color: 'inherit',
+                          },
+                        }}
+                      />
+                    )}
+                    
+                    {room?.type === 'direct' && otherUser?.isOnline && (
+                      <Chip 
+                        label="Online"
+                        size="small"
+                        sx={{ 
+                          height: 20,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          bgcolor: alpha('#10b981', 0.12),
+                          color: '#10b981',
+                          border: `1px solid ${alpha('#10b981', 0.25)}`,
+                          display: isMobile ? 'none' : 'flex',
+                        }}
+                      />
+                    )}
+                  </Box>
                 )}
-                {room?.type === 'direct' && otherUser?.isOnline && !isMobile && (
-                  <CheckCircleIcon sx={{ fontSize: 14, color: '#4caf50' }} />
-                )}
-              </Typography>
+              </Box>
               
+              {/* Subtitle with Enhanced Styling */}
               {!isMessageSelectionMode && (
                 <Typography 
                   variant="caption" 
                   sx={{ 
-                    color: alpha(isDarkMode ? '#e9edef' : '#111b21', 0.7),
-                    fontSize: isMobile ? '0.7rem' : '0.8rem',
-                    display: 'block',
+                    color: isDarkMode ? alpha('#e9edef', 0.65) : alpha('#6b7280', 0.85),
+                    fontSize: isMobile ? '0.75rem' : '0.8rem',
                     fontWeight: 500,
+                    lineHeight: 1.3,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    mt: 0.25,
                   }}
                 >
                   {room?.type === 'direct' ? (
                     otherUser?.isOnline ? (
-                      <Box component="span" sx={{ color: '#4caf50', fontWeight: 600 }}>
-                        Online
+                      <Box component="span" sx={{ 
+                        color: '#10b981', 
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                      }}>
+                        <Box
+                          sx={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            bgcolor: '#10b981',
+                            animation: 'blink 1.5s ease-in-out infinite',
+                            '@keyframes blink': {
+                              '0%, 100%': { opacity: 1 },
+                              '50%': { opacity: 0.5 },
+                            },
+                          }}
+                        />
+                        Active now
                       </Box>
                     ) : (
                       `Last seen ${formatLastSeen(otherUser?.lastSeen)}`
                     )
                   ) : (
-                    isMobile 
-                      ? `${room?.members?.length || 0} members`
-                      : `${room?.members?.filter(m => m?.user?.name).map(m => m.user.name).slice(0, 3).join(', ')}${(room?.members?.length || 0) > 3 ? `... and ${(room?.members?.length || 0) - 3} more` : ''}`
+                    `${room?.members?.filter(m => m?.user?.name).map(m => m.user.name).slice(0, isMobile ? 2 : 4).join(', ')}${(room?.members?.length || 0) > (isMobile ? 2 : 4) ? ` and ${(room?.members?.length || 0) - (isMobile ? 2 : 4)} others` : ''}`
                   )}
                 </Typography>
               )}
             </Box>
-
-            {/* Desktop Actions */}
-            {!isMobile && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {!isMessageSelectionMode && (
-                  <>
-                    <Tooltip title="Voice call">
-                      <IconButton
-                        size="small"
-                        sx={{ 
-                          color: 'inherit',
-                          '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.main, 0.1),
-                            color: theme.palette.primary.main,
-                            transform: 'scale(1.1)',
-                          },
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <PhoneIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-
-                    <Tooltip title="Video call">
-                      <IconButton
-                        size="small"
-                        sx={{ 
-                          color: 'inherit',
-                          '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.main, 0.1),
-                            color: theme.palette.primary.main,
-                            transform: 'scale(1.1)',
-                          },
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <VideoCallIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    
-                    <Tooltip title="More options">
-                      <IconButton
-                        size="small"
-                        onClick={handleHeaderMenuClick}
-                        sx={{ 
-                          color: 'inherit',
-                          '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.main, 0.1),
-                          color: theme.palette.primary.main,
-                          transform: 'scale(1.1)',
-                        },
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <MoreIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </>
-              )}
-            </Box>
-          )}
           </Box>
-          
-          {/* Mobile Action Bar - Stacked Below Main Header */}
-          {isMobile && (
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: isMessageSelectionMode ? 'center' : 'flex-end',
-              gap: 1,
-              mt: 0.5
-            }}>
-              {isMessageSelectionMode ? (
-                // Mobile Selection Bar
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    borderRadius: 3,
-                    px: 3,
-                    py: 1,
-                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-                    width: '100%',
-                    maxWidth: 400,
-                  }}
-                >
-                  {/* Mobile Action Buttons */}
-                  <Tooltip title={selectedMessages.size === (messages[currentRoom!]?.length || 0) ? "Deselect all" : "Select all"}>
-                    <IconButton
-                      size="small"
-                      onClick={selectedMessages.size === (messages[currentRoom!]?.length || 0) ? handleDeselectAllMessages : handleSelectAllMessages}
-                      sx={{ 
+
+          {/* Right Actions Section */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {isMessageSelectionMode ? (
+              // Selection Mode Actions
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {!isMobile && (
+                  <>
+                    <Tooltip title="Select all" arrow>
+                      <IconButton
+                        onClick={selectedMessages.size === (messages[currentRoom!]?.length || 0) ? handleDeselectAllMessages : handleSelectAllMessages}
+                        sx={{ 
+                          color: theme.palette.primary.main,
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.15),
+                            transform: 'scale(1.05)',
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        {selectedMessages.size === (messages[currentRoom!]?.length || 0) ? 
+                          <CheckBoxIcon /> : 
+                          <SelectAllIcon />
+                        }
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Delete selected" arrow>
+                      <IconButton
+                        onClick={handleDeleteSelectedMessage}
+                        disabled={selectedMessages.size === 0}
+                        sx={{ 
+                          color: selectedMessages.size > 0 ? theme.palette.error.main : theme.palette.text.disabled,
+                          bgcolor: selectedMessages.size > 0 ? alpha(theme.palette.error.main, 0.08) : 'transparent',
+                          '&:hover': {
+                            bgcolor: selectedMessages.size > 0 ? alpha(theme.palette.error.main, 0.15) : 'transparent',
+                            transform: selectedMessages.size > 0 ? 'scale(1.05)' : 'none',
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Forward selected" arrow>
+                      <IconButton
+                        onClick={handleForwardSelectedMessage}
+                        disabled={selectedMessages.size === 0}
+                        sx={{ 
+                          color: selectedMessages.size > 0 ? theme.palette.success.main : theme.palette.text.disabled,
+                          bgcolor: selectedMessages.size > 0 ? alpha(theme.palette.success.main, 0.08) : 'transparent',
+                          '&:hover': {
+                            bgcolor: selectedMessages.size > 0 ? alpha(theme.palette.success.main, 0.15) : 'transparent',
+                            transform: selectedMessages.size > 0 ? 'scale(1.05)' : 'none',
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <ForwardIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </>
+                )}
+
+                <Tooltip title="Exit selection" arrow>
+                  <IconButton
+                    onClick={handleExitSelectionMode}
+                    sx={{ 
+                      color: theme.palette.text.secondary,
+                      bgcolor: alpha(theme.palette.text.secondary, 0.08),
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.text.secondary, 0.15),
+                        transform: 'scale(1.05)',
+                      },
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            ) : (
+              // Normal Mode Actions
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {/* Call Actions with Modern Styling */}
+                <Tooltip title="Voice call" arrow>
+                  <IconButton
+                    sx={{ 
+                      width: 44,
+                      height: 44,
+                      color: isDarkMode ? '#8696a0' : '#54656f',
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.12),
                         color: theme.palette.primary.main,
-                        width: 42,
-                        height: 42,
-                        '&:hover': {
-                          backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                        },
-                      }}
-                    >
-                      {selectedMessages.size === (messages[currentRoom!]?.length || 0) ? 
-                        <CheckBoxIcon sx={{ fontSize: 20 }} /> : 
-                        <CheckBoxOutlineBlankIcon sx={{ fontSize: 20 }} />
-                      }
-                    </IconButton>
-                  </Tooltip>
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                      },
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  >
+                    <PhoneIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
 
-                  <Tooltip title="Delete selected">
-                    <IconButton
-                      size="small"
-                      onClick={handleDeleteSelectedMessage}
-                      disabled={selectedMessages.size === 0}
-                      sx={{ 
-                        color: selectedMessages.size > 0 ? theme.palette.error.main : theme.palette.text.disabled,
-                        width: 42,
-                        height: 42,
-                        '&:hover': {
-                          backgroundColor: selectedMessages.size > 0 ? alpha(theme.palette.error.main, 0.08) : 'transparent',
-                        },
-                      }}
-                    >
-                      <DeleteIcon sx={{ fontSize: 20 }} />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Forward selected">
-                    <IconButton
-                      size="small"
-                      onClick={handleForwardSelectedMessage}
-                      disabled={selectedMessages.size === 0}
-                      sx={{ 
-                        color: selectedMessages.size > 0 ? theme.palette.success.main : theme.palette.text.disabled,
-                        width: 42,
-                        height: 42,
-                        '&:hover': {
-                          backgroundColor: selectedMessages.size > 0 ? alpha(theme.palette.success.main, 0.08) : 'transparent',
-                        },
-                      }}
-                    >
-                      <ForwardIcon sx={{ fontSize: 20 }} />
-                    </IconButton>
-                  </Tooltip>
-
-                  {/* Spacer */}
-                  <Box sx={{ flexGrow: 1 }} />
-
-                  <Tooltip title="Exit selection">
-                    <IconButton
-                      size="small"
-                      onClick={handleExitSelectionMode}
-                      sx={{ 
-                        color: theme.palette.text.secondary,
-                        width: 42,
-                        height: 42,
-                        '&:hover': {
-                          backgroundColor: theme.palette.action.hover,
-                        },
-                      }}
-                    >
-                      <CloseIcon sx={{ fontSize: 20 }} />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              ) : (
-                // Mobile Normal Actions
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Tooltip title="Voice call">
-                    <IconButton
-                      size="small"
-                      sx={{ 
-                        color: 'inherit',
-                        width: 40,
-                        height: 40,
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.1),
-                          color: theme.palette.primary.main,
-                        },
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <PhoneIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Video call">
-                    <IconButton
-                      size="small"
-                      sx={{ 
-                        color: 'inherit',
-                        width: 40,
-                        height: 40,
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.1),
-                          color: theme.palette.primary.main,
-                        },
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <VideoCallIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </Tooltip>
-                  
-                  <Tooltip title="More options">
-                    <IconButton
-                      size="small"
-                      onClick={handleHeaderMenuClick}
-                      sx={{ 
-                        color: 'inherit',
-                        width: 40,
-                        height: 40,
-                        '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.1),
-                          color: theme.palette.primary.main,
-                        },
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <MoreIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              )}
-            </Box>
-          )}
+                <Tooltip title="Video call" arrow>
+                  <IconButton
+                    sx={{ 
+                      width: 44,
+                      height: 44,
+                      color: isDarkMode ? '#8696a0' : '#54656f',
+                      bgcolor: alpha(theme.palette.secondary.main, 0.05),
+                      border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.secondary.main, 0.12),
+                        color: theme.palette.secondary.main,
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.secondary.main, 0.25)}`,
+                      },
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  >
+                    <VideoCallIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
+                
+                <Tooltip title="Chat options" arrow>
+                  <IconButton
+                    onClick={handleHeaderMenuClick}
+                    sx={{ 
+                      width: 44,
+                      height: 44,
+                      color: isDarkMode ? '#8696a0' : '#54656f',
+                      bgcolor: alpha(theme.palette.text.secondary, 0.05),
+                      border: `1px solid ${alpha(theme.palette.text.secondary, 0.1)}`,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.text.secondary, 0.12),
+                        color: theme.palette.text.primary,
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.text.secondary, 0.25)}`,
+                      },
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  >
+                    <MoreIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
+          </Box>
         </Box>
+
+        {/* Mobile Selection Actions Bar */}
+        {isMobile && isMessageSelectionMode && (
+          <Box
+            sx={{
+              px: 2,
+              py: 1,
+              bgcolor: alpha(theme.palette.primary.main, 0.03),
+              borderTop: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 2,
+            }}
+          >
+            <Tooltip title="Select all" arrow>
+              <IconButton
+                onClick={selectedMessages.size === (messages[currentRoom!]?.length || 0) ? handleDeselectAllMessages : handleSelectAllMessages}
+                sx={{ 
+                  color: theme.palette.primary.main,
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                  width: 48,
+                  height: 48,
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.15),
+                    transform: 'scale(1.05)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {selectedMessages.size === (messages[currentRoom!]?.length || 0) ? 
+                  <CheckBoxIcon sx={{ fontSize: 22 }} /> : 
+                  <SelectAllIcon sx={{ fontSize: 22 }} />
+                }
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Delete selected" arrow>
+              <IconButton
+                onClick={handleDeleteSelectedMessage}
+                disabled={selectedMessages.size === 0}
+                sx={{ 
+                  color: selectedMessages.size > 0 ? theme.palette.error.main : theme.palette.text.disabled,
+                  bgcolor: selectedMessages.size > 0 ? alpha(theme.palette.error.main, 0.08) : alpha(theme.palette.text.disabled, 0.05),
+                  width: 48,
+                  height: 48,
+                  '&:hover': {
+                    bgcolor: selectedMessages.size > 0 ? alpha(theme.palette.error.main, 0.15) : alpha(theme.palette.text.disabled, 0.08),
+                    transform: selectedMessages.size > 0 ? 'scale(1.05)' : 'none',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <DeleteIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Forward selected" arrow>
+              <IconButton
+                onClick={handleForwardSelectedMessage}
+                disabled={selectedMessages.size === 0}
+                sx={{ 
+                  color: selectedMessages.size > 0 ? theme.palette.success.main : theme.palette.text.disabled,
+                  bgcolor: selectedMessages.size > 0 ? alpha(theme.palette.success.main, 0.08) : alpha(theme.palette.text.disabled, 0.05),
+                  width: 48,
+                  height: 48,
+                  '&:hover': {
+                    bgcolor: selectedMessages.size > 0 ? alpha(theme.palette.success.main, 0.15) : alpha(theme.palette.text.disabled, 0.08),
+                    transform: selectedMessages.size > 0 ? 'scale(1.05)' : 'none',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <ForwardIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        )}
       </Paper>
 
-      {/* Messages Area with Enhanced Styling */}
+      {/* Messages Area with Enhanced Glassmorphism Styling */}
       <Box
         sx={{
           flexGrow: 1,
           overflow: 'auto',
-          overflowX: 'hidden', // Prevent horizontal scrolling
-          p: 1,
-          maxWidth: '100%', // Ensure no overflow
-          backgroundColor: isDarkMode ? '#0b141a' : '#f0f2f5',
-          backgroundImage: isDarkMode 
-            ? 'url("data:image/svg+xml,%3Csvg width="40" height="40" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="40" height="40"%3E%3Cpath d="M0 0h40v40H0z" fill="none" stroke="%23182229" stroke-width="0.5" opacity="0.3"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")'
-            : 'url("data:image/svg+xml,%3Csvg width="40" height="40" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="a" patternUnits="userSpaceOnUse" width="40" height="40"%3E%3Cpath d="M0 0h40v40H0z" fill="none" stroke="%23e9edef" stroke-width="0.5" opacity="0.1"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23a)"/%3E%3C/svg%3E")',
+          overflowX: 'hidden',
+          position: 'relative',
+          background: isDarkMode 
+            ? 'linear-gradient(135deg, rgba(11, 20, 26, 0.7) 0%, rgba(15, 23, 42, 0.8) 50%, rgba(30, 41, 59, 0.7) 100%)'
+            : 'linear-gradient(135deg, rgba(240, 242, 245, 0.7) 0%, rgba(248, 250, 252, 0.8) 50%, rgba(241, 245, 249, 0.7) 100%)',
+          backdropFilter: 'blur(15px) saturate(170%)',
+          WebkitBackdropFilter: 'blur(15px) saturate(170%)',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: isDarkMode
+              ? `
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 40%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.04) 0%, transparent 50%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%)
+              `
+              : `
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 80% 40%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.02) 0%, transparent 50%),
+                linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, transparent 100%)
+              `,
+            pointerEvents: 'none',
+            zIndex: 0,
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: isDarkMode
+              ? 'url("data:image/svg+xml,%3Csvg width="60" height="60" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="glass-pattern" patternUnits="userSpaceOnUse" width="60" height="60"%3E%3Ccircle cx="30" cy="30" r="1" fill="rgba(255,255,255,0.03)"/%3E%3Ccircle cx="15" cy="15" r="0.5" fill="rgba(255,255,255,0.02)"/%3E%3Ccircle cx="45" cy="45" r="0.5" fill="rgba(255,255,255,0.02)"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23glass-pattern)"/%3E%3C/svg%3E")'
+              : 'url("data:image/svg+xml,%3Csvg width="60" height="60" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3Cpattern id="glass-pattern" patternUnits="userSpaceOnUse" width="60" height="60"%3E%3Ccircle cx="30" cy="30" r="1" fill="rgba(0,0,0,0.02)"/%3E%3Ccircle cx="15" cy="15" r="0.5" fill="rgba(0,0,0,0.01)"/%3E%3Ccircle cx="45" cy="45" r="0.5" fill="rgba(0,0,0,0.01)"/%3E%3C/pattern%3E%3C/defs%3E%3Crect width="100%" height="100%" fill="url(%23glass-pattern)"/%3E%3C/svg%3E")',
+            opacity: 0.6,
+            pointerEvents: 'none',
+            zIndex: 1,
+          },
+          '& > *': {
+            position: 'relative',
+            zIndex: 2,
+          },
           '&::-webkit-scrollbar': {
-            width: '6px',
+            width: '8px',
           },
           '&::-webkit-scrollbar-track': {
-            bgcolor: 'transparent',
+            background: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            bgcolor: alpha(theme.palette.text.secondary, 0.2),
-            borderRadius: '3px',
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)'
+              : 'linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%)',
+            borderRadius: '4px',
+            border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
           },
           '&::-webkit-scrollbar-thumb:hover': {
-            bgcolor: alpha(theme.palette.text.secondary, 0.3),
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%)'
+              : 'linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.2) 100%)',
           },
+          scrollBehavior: 'smooth',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         {roomMessages.length === 0 ? (
@@ -916,23 +1039,44 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
             </Box>
           </Box>
         ) : (
-          <Box sx={{ pb: 2 }}>
+          <Box sx={{ 
+            pb: 2, 
+            px: isMobile ? 1 : 2,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.5,
+            width: '100%',
+            maxWidth: '100%',
+            overflowX: 'hidden',
+          }}>
             {roomMessages.map((message: Message, index: number) => {
               const prevMessage = index > 0 ? roomMessages[index - 1] : null;
+              const nextMessage = index < roomMessages.length - 1 ? roomMessages[index + 1] : null;
+              
               const showAvatar = !prevMessage || 
                 prevMessage.sender._id !== message.sender._id ||
                 new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() > 300000;
               
+              const isConsecutive = nextMessage && 
+                nextMessage.sender._id === message.sender._id &&
+                new Date(nextMessage.createdAt).getTime() - new Date(message.createdAt).getTime() <= 300000;
+              
               return (
-                <Box key={`${message._id}-${index}`}>
+                <Box 
+                  key={`${message._id}-${index}`}
+                  sx={{
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: user?.id === message.sender._id ? 'flex-end' : 'flex-start',
+                    mb: isConsecutive ? 0.25 : 0.75,
+                    px: { xs: 1, sm: 2 },
+                  }}
+                >
                   <MessageComponent
                     message={message}
                     showAvatar={showAvatar}
                     currentUserId={user?.id}
                     onReply={handleReply}
-                    onLongPress={handleMessageLongPress}
-                    onClick={handleMessageClick}
-                    onDoubleClick={handleMessageDoubleClick}
                     isSelected={selectedMessages.has(message._id)}
                     isSelectionMode={isMessageSelectionMode}
                   />
@@ -942,7 +1086,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
             
             {/* Typing Indicator */}
             {roomTypingUsers.length > 0 && (
-              <Box>
+              <Box sx={{
+                display: 'flex',
+                justifyContent: 'flex-start',
+                px: 0,
+                mt: 0.5,
+              }}>
                 <TypingIndicator users={roomTypingUsers} />
               </Box>
             )}
@@ -955,15 +1104,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
         elevation={0}
         sx={{
           borderRadius: 0,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          bgcolor: isDarkMode 
-            ? alpha('#202c33', 0.95) 
-            : alpha('#ffffff', 0.95),
-          backdropFilter: 'blur(10px)',
+          borderTop: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
+          background: isDarkMode 
+            ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%)'
+            : 'linear-gradient(135deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.04) 100%)',
+          backdropFilter: 'blur(15px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(15px) saturate(180%)',
           position: 'relative',
-          overflow: 'hidden', // Prevent horizontal scrolling
-          maxWidth: '100%', // Ensure no overflow
-          minHeight: { xs: 60, md: 'auto' }, // Smaller on mobile
+          overflow: 'hidden',
+          maxWidth: '100%',
+          minHeight: { xs: 60, md: 'auto' },
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -972,9 +1123,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
             right: 0,
             bottom: 0,
             background: isDarkMode 
-              ? 'linear-gradient(45deg, rgba(37, 211, 102, 0.02) 0%, rgba(18, 140, 126, 0.02) 100%)'
-              : 'linear-gradient(45deg, rgba(37, 211, 102, 0.01) 0%, rgba(18, 140, 126, 0.01) 100%)',
-            zIndex: -1,
+              ? 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 70%)'
+              : 'radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.05) 0%, transparent 70%)',
+            pointerEvents: 'none',
+            zIndex: 0,
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: isDarkMode
+              ? 'rgba(255, 255, 255, 0.02)'
+              : 'rgba(0, 0, 0, 0.02)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          },
+          '& > *': {
+            position: 'relative',
+            zIndex: 2,
           },
         }}
       >
@@ -1080,16 +1249,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               <IconButton
                 size="small"
                 sx={{ 
-                  color: 'text.secondary',
+                  color: isDarkMode ? '#ffffff' : '#000000',
                   mb: 0.2,
                   minWidth: { xs: 36, md: 40 },
                   height: { xs: 36, md: 40 },
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
+                    : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
+                  backdropFilter: 'blur(8px) saturate(150%)',
+                  WebkitBackdropFilter: 'blur(8px) saturate(150%)',
+                  border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
+                  borderRadius: '12px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)'
+                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                     color: theme.palette.primary.main,
-                    transform: 'scale(1.1)',
+                    transform: 'translateY(-2px) scale(1.05)',
+                    boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
                   },
-                  transition: 'all 0.2s ease',
                 }}
               >
                 <EmojiIcon fontSize={isMobile ? 'small' : 'medium'} />
@@ -1119,31 +1299,41 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: { xs: 20, md: 6 },
+                  borderRadius: { xs: 20, md: 12 },
                   minHeight: { xs: 40, md: 48 },
-                  backgroundColor: isDarkMode 
-                    ? '#374151' 
-                    : '#f9fafb',
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.08) 100%)'
+                    : 'linear-gradient(135deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.08) 100%)',
+                  backdropFilter: 'blur(8px) saturate(150%)',
+                  WebkitBackdropFilter: 'blur(8px) saturate(150%)',
+                  border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '& fieldset': {
-                    border: `1px solid ${isDarkMode ? '#4b5563' : '#d1d5db'}`,
+                    border: 'none',
                   },
                   '&:hover': {
-                    '& fieldset': {
-                      border: `1px solid ${isDarkMode ? '#6b7280' : '#9ca3af'}`,
-                    },
-                    transform: 'scale(1.01)',
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.12) 100%)'
+                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0.12) 100%)',
+                    border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.15)}`,
+                    transform: 'translateY(-1px)',
+                    boxShadow: isDarkMode 
+                      ? '0 4px 16px rgba(255, 255, 255, 0.1)'
+                      : '0 4px 16px rgba(0, 0, 0, 0.1)',
                   },
                   '&.Mui-focused': {
-                    '& fieldset': {
-                      border: `2px solid #3b82f6`,
-                    },
-                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.16) 100%)'
+                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.16) 100%)',
+                    border: `2px solid ${alpha(theme.palette.primary.main, 0.8)}`,
+                    boxShadow: `0 0 0 4px ${alpha(theme.palette.primary.main, 0.1)}, 0 8px 24px rgba(59, 130, 246, 0.2)`,
+                    transform: 'translateY(-2px)',
                   },
                   '& .MuiInputBase-input': {
                     py: { xs: 1, md: 2 },
                     px: { xs: 2, md: 2 },
                     fontSize: { xs: '0.9rem', md: '0.95rem' },
-                    color: isDarkMode ? '#ffffff' : '#374151',
+                    color: isDarkMode ? '#ffffff' : '#000000',
                     fontWeight: 400,
                     lineHeight: 1.4,
                     '&::placeholder': {
@@ -1165,16 +1355,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                 size="small"
                 onClick={handleAttachClick}
                 sx={{ 
-                  color: 'text.secondary',
+                  color: isDarkMode ? '#ffffff' : '#000000',
                   mb: 0.2,
                   minWidth: { xs: 36, md: 40 },
                   height: { xs: 36, md: 40 },
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
+                    : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
+                  backdropFilter: 'blur(8px) saturate(150%)',
+                  WebkitBackdropFilter: 'blur(8px) saturate(150%)',
+                  border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
+                  borderRadius: '12px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)'
+                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                     color: theme.palette.primary.main,
-                    transform: 'rotate(15deg) scale(1.1)',
+                    transform: 'translateY(-2px) rotate(15deg) scale(1.05)',
+                    boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
                   },
-                  transition: 'all 0.3s ease',
                 }}
               >
                 <AttachFileIcon fontSize={isMobile ? 'small' : 'medium'} />
@@ -1187,22 +1388,40 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                 <IconButton
                   type="submit"
                   sx={{
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)'
+                      : 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
+                    backdropFilter: 'blur(10px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(10px) saturate(180%)',
+                    color: '#ffffff',
                     width: { xs: 40, md: 48 },
                     height: { xs: 40, md: 48 },
                     minWidth: { xs: 40, md: 48 },
                     borderRadius: '50%',
+                    border: `1px solid ${alpha('#ffffff', 0.2)}`,
+                    boxShadow: '0 8px 32px rgba(59, 130, 246, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3) 0%, transparent 70%)',
+                      borderRadius: '50%',
+                      pointerEvents: 'none',
+                    },
                     '&:hover': {
-                      backgroundColor: '#2563eb',
-                      transform: 'scale(1.05)',
-                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                      background: isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(37, 99, 235, 0.95) 0%, rgba(29, 78, 216, 0.95) 100%)'
+                        : 'linear-gradient(135deg, rgba(37, 99, 235, 0.95) 0%, rgba(29, 78, 216, 0.95) 100%)',
+                      transform: 'translateY(-2px) scale(1.05)',
+                      boxShadow: '0 12px 40px rgba(59, 130, 246, 0.5), 0 4px 12px rgba(59, 130, 246, 0.4)',
                     },
                     '&:active': {
-                      transform: 'scale(0.95)',
+                      transform: 'translateY(-1px) scale(0.98)',
                     },
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.2)',
                   }}
                 >
                   <SendIcon fontSize={isMobile ? 'small' : 'medium'} />
@@ -1212,16 +1431,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               <Tooltip title="Voice message">
                 <IconButton
                   sx={{ 
-                    color: 'text.secondary',
+                    color: isDarkMode ? '#ffffff' : '#000000',
                     width: { xs: 40, md: 48 },
                     height: { xs: 40, md: 48 },
                     minWidth: { xs: 40, md: 48 },
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
+                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
+                    backdropFilter: 'blur(8px) saturate(150%)',
+                    WebkitBackdropFilter: 'blur(8px) saturate(150%)',
+                    border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
+                    borderRadius: '50%',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      background: isDarkMode 
+                        ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)'
+                        : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
+                      border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                       color: theme.palette.primary.main,
-                      transform: 'scale(1.05)',
+                      transform: 'translateY(-2px) scale(1.05)',
+                      boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
                     },
-                    transition: 'all 0.2s ease',
                   }}
                 >
                   <MicIcon fontSize={isMobile ? 'small' : 'medium'} />

@@ -29,9 +29,9 @@ import {
   Notifications as NotificationsIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
-import { useWhatsAppTheme } from '../contexts/ThemeContext';
+import { useAriztaTheme } from '../contexts/ThemeContext';
 
-interface WhatsAppHeaderProps {
+interface AriztaHeaderProps {
   title?: string;
   showBackButton?: boolean;
   onBackClick?: () => void;
@@ -45,7 +45,7 @@ interface WhatsAppHeaderProps {
   lastSeen?: string;
 }
 
-const WhatsAppHeader: React.FC<WhatsAppHeaderProps> = ({
+const AriztaHeader: React.FC<AriztaHeaderProps> = ({
   title = 'RTCA Chat',
   showBackButton = false,
   onBackClick,
@@ -58,8 +58,7 @@ const WhatsAppHeader: React.FC<WhatsAppHeaderProps> = ({
   isOnline,
   lastSeen,
 }) => {
-  const { logout, user } = useAuth();
-  const { isDarkMode } = useWhatsAppTheme();
+  const { logout } = useAuth();
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -293,4 +292,4 @@ const WhatsAppHeader: React.FC<WhatsAppHeaderProps> = ({
   );
 };
 
-export default WhatsAppHeader;
+export default AriztaHeader;

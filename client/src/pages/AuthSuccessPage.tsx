@@ -45,7 +45,7 @@ const AuthSuccessPage: React.FC = () => {
     };
 
     handleAuthSuccess();
-  }, []);
+  }, [login, navigate, searchParams]);
 
   if (isLoading) {
     return <LoadingSpinner message="Authenticating..." />;

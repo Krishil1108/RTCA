@@ -1,7 +1,7 @@
 {
-  "name": "rtca-chat-app",
+  "name": "arizta-chat-app",
   "version": "1.0.0",
-  "description": "Real-time chat application with Gmail OAuth authentication",
+  "description": "Arizta - Real-time chat application with Gmail OAuth authentication",
   "main": "server/server.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
