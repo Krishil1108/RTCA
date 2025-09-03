@@ -71,9 +71,29 @@ The client will run on `http://localhost:3000` and the server on `http://localho
 5. Add authorized redirect URIs:
    - `http://localhost:5000/auth/google/callback`
 
-### MongoDB Setup
-- Local: Install MongoDB and run on default port (27017)
-- Cloud: Create MongoDB Atlas cluster and get connection string
+### Database Setup
+
+#### Option 1: MongoDB Atlas (Recommended for Production)
+1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/atlas)
+2. Create a new cluster
+3. Set up database user and network access
+4. Get your connection string
+5. Update `MONGODB_URI` in `.env`:
+   ```
+   MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/rtca-chat?retryWrites=true&w=majority
+   ```
+
+#### Option 2: Local MongoDB
+- Install MongoDB and run on default port (27017)
+- Use: `MONGODB_URI=mongodb://localhost:27017/rtca-chat`
+
+#### Test Your Connection
+```bash
+cd server
+npm run test-connection
+```
+
+For detailed Atlas setup, see [MONGODB_ATLAS_SETUP.md](MONGODB_ATLAS_SETUP.md)
 
 ## Project Structure
 

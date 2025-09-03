@@ -23,7 +23,7 @@ const initializeDefaultData = async () => {
       generalRoom = new Room({
         name: 'General',
         description: 'General discussion room for all users',
-        type: 'public',
+        type: 'group',
         createdBy: systemUser._id,
         members: [{
           user: systemUser._id,

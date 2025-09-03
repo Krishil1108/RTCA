@@ -33,17 +33,41 @@ const io = socketIo(server, {
   }
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rtca-chat', {
+// Connect to MongoDB (Atlas or Local)
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/rtca-chat';
+const isAtlas = mongoUri.includes('mongodb+srv://');
+
+console.log(`Connecting to MongoDB ${isAtlas ? 'Atlas' : 'Local'}...`);
+
+mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  // Atlas-specific optimizations
+  ...(isAtlas && {
+    serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+    socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    maxPoolSize: 10, // Maintain up to 10 socket connections
+    retryWrites: true, // Retry a write operation if it fails
+    w: 'majority' // Write operations wait for majority confirmation
+  })
 })
 .then(() => {
-  console.log('Connected to MongoDB');
+  console.log(`✅ Connected to MongoDB ${isAtlas ? 'Atlas' : 'Local'}`);
+  console.log(`Database: ${mongoose.connection.name}`);
   // Initialize default data after MongoDB connection
   initializeDefaultData();
 })
-.catch(err => console.error('MongoDB connection error:', err));
+.catch(err => {
+  console.error('❌ MongoDB connection error:', err.message);
+  if (isAtlas) {
+    console.error('💡 Atlas connection tips:');
+    console.error('   - Check your connection string format');
+    console.error('   - Verify username and password');
+    console.error('   - Ensure IP is whitelisted');
+    console.error('   - Check network connectivity');
+  }
+  process.exit(1);
+});
 
 // Security middleware
 app.use(helmet());
