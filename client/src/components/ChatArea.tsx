@@ -1114,57 +1114,31 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           )}
         </Box>
 
-      {/* Mobile-Optimized Message Input */}
+      {/* Fixed Bottom Message Input Area */}
       <Paper
         elevation={0}
         sx={{
           borderRadius: 0,
           borderTop: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
           background: isDarkMode 
-            ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%)'
-            : 'linear-gradient(135deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.04) 100%)',
-          backdropFilter: 'blur(15px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(15px) saturate(180%)',
-          position: 'relative',
+            ? 'rgba(32, 44, 51, 0.95)'
+            : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px) saturate(150%)',
+          WebkitBackdropFilter: 'blur(10px) saturate(150%)',
+          position: 'sticky', // Changed from relative to sticky
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000, // High z-index to stay on top
           overflow: 'hidden',
           maxWidth: '100%',
-          // Mobile keyboard handling
-          '@supports (env(keyboard-inset-height))': {
-            paddingBottom: 'env(keyboard-inset-height)',
-          },
+          minHeight: { xs: 60, md: 'auto' }, // Consistent minimum height
           // Safe area insets for mobile notches
-          paddingBottom: { xs: 'env(safe-area-inset-bottom, 0px)', md: 0 },
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: isDarkMode 
-              ? 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 70%)'
-              : 'radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.05) 0%, transparent 70%)',
-            pointerEvents: 'none',
-            zIndex: 0,
-          },
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: isDarkMode
-              ? 'rgba(255, 255, 255, 0.02)'
-              : 'rgba(0, 0, 0, 0.02)',
-            pointerEvents: 'none',
-            zIndex: 1,
-          },
-          '& > *': {
-            position: 'relative',
-            zIndex: 2,
-          },
+          paddingBottom: { xs: 'max(env(safe-area-inset-bottom, 0px), 8px)', md: 0 },
+          transition: 'all 0.2s ease',
+          boxShadow: isDarkMode 
+            ? '0 -2px 8px rgba(0, 0, 0, 0.3)'
+            : '0 -2px 8px rgba(0, 0, 0, 0.1)',
         }}
       >
         {/* Reply Bar */}
@@ -1261,12 +1235,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
             </Box>
         )}
 
-        {/* Input Form - Mobile Optimized */}
+        {/* Compact Input Form */}
         <Box 
           component="form" 
           onSubmit={handleMessageSubmit} 
           sx={{ 
-            p: { xs: 0.75, sm: 1, md: 2 },
+            p: { xs: 8, sm: 12, md: 16 }, // Reduced padding significantly
             maxWidth: '100%',
             overflow: 'hidden',
           }}
@@ -1274,53 +1248,42 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           <Box 
             sx={{ 
               display: 'flex', 
-              alignItems: 'flex-end', 
-              gap: { xs: 0.5, sm: 0.75, md: 1 },
+              alignItems: 'center', // Changed from flex-end to center
+              gap: { xs: 8, sm: 10, md: 12 }, // Reduced gaps
               maxWidth: '100%',
               overflow: 'hidden',
-              // Ensure proper layout on small screens
               flexWrap: 'nowrap',
             }}
           >
-            {/* Emoji Button - Smaller on mobile */}
+            {/* Compact Emoji Button */}
             <Tooltip title="Emoji">
               <IconButton
                 size="small"
                 sx={{ 
-                  color: isDarkMode ? '#ffffff' : '#000000',
-                  mb: 0.2,
+                  color: isDarkMode ? '#8696a0' : '#54656f',
                   width: { xs: 32, sm: 36, md: 40 },
                   height: { xs: 32, sm: 36, md: 40 },
                   minWidth: { xs: 32, sm: 36, md: 40 },
-                  flexShrink: 0, // Prevent shrinking
-                  background: isDarkMode 
-                    ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
-                    : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
-                  backdropFilter: 'blur(8px) saturate(150%)',
-                  WebkitBackdropFilter: 'blur(8px) saturate(150%)',
-                  border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
-                  borderRadius: { xs: '8px', md: '12px' },
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  flexShrink: 0,
+                  bgcolor: alpha(theme.palette.action.hover, 0.3),
+                  borderRadius: { xs: 6, md: 8 },
+                  transition: 'all 0.2s ease',
                   '&:hover': {
-                    background: isDarkMode 
-                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)'
-                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
-                    transform: 'translateY(-1px) scale(1.02)',
-                    boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    transform: 'scale(1.05)',
                   },
                 }}
               >
-                <EmojiIcon fontSize={isMobile ? 'small' : 'medium'} />
+                <EmojiIcon fontSize="small" />
               </IconButton>
             </Tooltip>
 
-            {/* Message Input - Flexible width */}
+            {/* Thin Message Input */}
             <TextField
               fullWidth
               multiline
-              maxRows={isMobile ? 3 : 4}
+              maxRows={isMobile ? 2 : 3} // Reduced max rows
               placeholder="Type a message..."
               value={messageInput}
               onChange={handleInputChange}
@@ -1333,57 +1296,39 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               inputMode="text"
               className={isMobile ? 'mobile-input' : ''}
               onTouchStart={() => {
-                // Ensure input gets focus on mobile touch
                 if (isMobile && inputRef.current) {
                   inputRef.current.focus();
                 }
               }}
               sx={{
-                flex: 1, // Take remaining space
-                minWidth: 0, // Allow shrinking
+                flex: 1,
+                minWidth: 0,
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: { xs: 16, sm: 18, md: 12 },
-                  minHeight: { xs: 36, sm: 40, md: 48 },
-                  background: isDarkMode 
-                    ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.08) 100%)'
-                    : 'linear-gradient(135deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.08) 100%)',
-                  backdropFilter: 'blur(8px) saturate(150%)',
-                  WebkitBackdropFilter: 'blur(8px) saturate(150%)',
-                  border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  borderRadius: { xs: 18, sm: 20, md: 24 }, // More rounded
+                  minHeight: { xs: 32, sm: 36, md: 40 }, // Reduced height significantly
+                  bgcolor: isDarkMode 
+                    ? alpha(theme.palette.common.white, 0.08) 
+                    : alpha(theme.palette.common.black, 0.04),
+                  transition: 'all 0.2s ease',
                   '& fieldset': {
-                    border: 'none',
+                    border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
                   },
-                  '&:hover': {
-                    background: isDarkMode 
-                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.12) 100%)'
-                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0.12) 100%)',
-                    border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.15)}`,
-                    transform: 'translateY(-1px)',
-                    boxShadow: isDarkMode 
-                      ? '0 4px 16px rgba(255, 255, 255, 0.1)'
-                      : '0 4px 16px rgba(0, 0, 0, 0.1)',
+                  '&:hover fieldset': {
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                   },
-                  '&.Mui-focused': {
-                    background: isDarkMode 
-                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.16) 100%)'
-                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.16) 100%)',
-                    border: `2px solid ${alpha(theme.palette.primary.main, 0.8)}`,
-                    boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}, 0 6px 20px rgba(59, 130, 246, 0.2)`,
-                    transform: 'translateY(-1px)',
+                  '&.Mui-focused fieldset': {
+                    border: `2px solid ${theme.palette.primary.main}`,
+                    boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}`,
                   },
                   '& .MuiInputBase-input': {
-                    py: { xs: 0.75, sm: 1, md: 2 },
-                    px: { xs: 1.5, sm: 2, md: 2 },
+                    py: { xs: 8, sm: 10, md: 12 }, // Reduced padding significantly  
+                    px: { xs: 12, sm: 14, md: 16 },
                     fontSize: { xs: '0.875rem', sm: '0.9rem', md: '0.95rem' },
-                    color: isDarkMode ? '#ffffff' : '#000000',
-                    fontWeight: 400,
-                    lineHeight: 1.4,
+                    lineHeight: 1.2, // Reduced line height
                     '&::placeholder': {
                       color: alpha(theme.palette.text.secondary, 0.6),
                       fontStyle: 'italic',
                     },
-                    // Mobile-specific touch optimizations
                     WebkitAppearance: 'none',
                     WebkitUserSelect: 'text',
                     WebkitTouchCallout: 'default',
@@ -1392,122 +1337,81 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               }}
             />
 
-            {/* Attach Button - Smaller on mobile */}
+            {/* Compact Attach Button */}
             <Tooltip title="Attach file">
               <IconButton
                 size="small"
                 onClick={handleAttachClick}
                 sx={{ 
-                  color: isDarkMode ? '#ffffff' : '#000000',
-                  mb: 0.2,
+                  color: isDarkMode ? '#8696a0' : '#54656f',
                   width: { xs: 32, sm: 36, md: 40 },
                   height: { xs: 32, sm: 36, md: 40 },
                   minWidth: { xs: 32, sm: 36, md: 40 },
-                  flexShrink: 0, // Prevent shrinking
-                  background: isDarkMode 
-                    ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
-                    : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
-                  backdropFilter: 'blur(8px) saturate(150%)',
-                  WebkitBackdropFilter: 'blur(8px) saturate(150%)',
-                  border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
-                  borderRadius: { xs: '8px', md: '12px' },
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  flexShrink: 0,
+                  bgcolor: alpha(theme.palette.action.hover, 0.3),
+                  borderRadius: { xs: 6, md: 8 },
+                  transition: 'all 0.2s ease',
                   '&:hover': {
-                    background: isDarkMode 
-                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)'
-                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
-                    transform: 'translateY(-1px) rotate(10deg) scale(1.02)',
-                    boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    transform: 'scale(1.05) rotate(15deg)',
                   },
                 }}
               >
-                <AttachFileIcon fontSize={isMobile ? 'small' : 'medium'} />
+                <AttachFileIcon fontSize="small" />
               </IconButton>
             </Tooltip>
 
-            {/* Send or Voice Button - Fixed size to prevent overflow */}
+            {/* Compact Send/Voice Button */}
             {messageInput.trim() || attachedFiles.length > 0 ? (
               <Zoom in timeout={200}>
                 <IconButton
                   type="submit"
                   sx={{
-                    background: isDarkMode 
-                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)'
-                      : 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
-                    backdropFilter: 'blur(10px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(10px) saturate(180%)',
-                    color: '#ffffff',
-                    width: { xs: 36, sm: 40, md: 48 },
-                    height: { xs: 36, sm: 40, md: 48 },
-                    minWidth: { xs: 36, sm: 40, md: 48 },
-                    flexShrink: 0, // Prevent shrinking
+                    bgcolor: theme.palette.primary.main,
+                    color: 'white',
+                    width: { xs: 32, sm: 36, md: 40 },
+                    height: { xs: 32, sm: 36, md: 40 },
+                    minWidth: { xs: 32, sm: 36, md: 40 },
+                    maxWidth: { xs: 32, sm: 36, md: 40 }, // Ensure maximum width
+                    flexShrink: 0,
                     borderRadius: '50%',
-                    border: `1px solid ${alpha('#ffffff', 0.2)}`,
-                    boxShadow: { 
-                      xs: '0 4px 16px rgba(59, 130, 246, 0.3), 0 1px 4px rgba(59, 130, 246, 0.2)',
-                      md: '0 8px 32px rgba(59, 130, 246, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
-                    },
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3) 0%, transparent 70%)',
-                      borderRadius: '50%',
-                      pointerEvents: 'none',
-                    },
+                    boxShadow: theme.shadows[3],
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      background: isDarkMode 
-                        ? 'linear-gradient(135deg, rgba(37, 99, 235, 0.95) 0%, rgba(29, 78, 216, 0.95) 100%)'
-                        : 'linear-gradient(135deg, rgba(37, 99, 235, 0.95) 0%, rgba(29, 78, 216, 0.95) 100%)',
-                      transform: 'translateY(-1px) scale(1.05)',
-                      boxShadow: { 
-                        xs: '0 6px 20px rgba(59, 130, 246, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3)',
-                        md: '0 12px 40px rgba(59, 130, 246, 0.5), 0 4px 12px rgba(59, 130, 246, 0.4)'
-                      },
+                      bgcolor: theme.palette.primary.dark,
+                      transform: 'scale(1.05)',
+                      boxShadow: theme.shadows[6],
                     },
                     '&:active': {
-                      transform: 'translateY(0) scale(0.98)',
+                      transform: 'scale(0.95)',
                     },
                   }}
                 >
-                  <SendIcon fontSize={isMobile ? 'small' : 'medium'} />
+                  <SendIcon fontSize="small" />
                 </IconButton>
               </Zoom>
             ) : (
               <Tooltip title="Voice message">
                 <IconButton
                   sx={{ 
-                    color: isDarkMode ? '#ffffff' : '#000000',
-                    width: { xs: 36, sm: 40, md: 48 },
-                    height: { xs: 36, sm: 40, md: 48 },
-                    minWidth: { xs: 36, sm: 40, md: 48 },
-                    flexShrink: 0, // Prevent shrinking
-                    background: isDarkMode 
-                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
-                      : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
-                    backdropFilter: 'blur(8px) saturate(150%)',
-                    WebkitBackdropFilter: 'blur(8px) saturate(150%)',
-                    border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
+                    color: isDarkMode ? '#8696a0' : '#54656f',
+                    width: { xs: 32, sm: 36, md: 40 },
+                    height: { xs: 32, sm: 36, md: 40 },
+                    minWidth: { xs: 32, sm: 36, md: 40 },
+                    maxWidth: { xs: 32, sm: 36, md: 40 }, // Ensure maximum width
+                    flexShrink: 0,
+                    bgcolor: alpha(theme.palette.action.hover, 0.3),
                     borderRadius: '50%',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      background: isDarkMode 
-                        ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%)'
-                        : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
-                      border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
                       color: theme.palette.primary.main,
-                      transform: 'translateY(-1px) scale(1.05)',
-                      boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+                      transform: 'scale(1.05)',
                     },
                   }}
                 >
-                  <MicIcon fontSize={isMobile ? 'small' : 'medium'} />
+                  <MicIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
             )}
