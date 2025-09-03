@@ -1,0 +1,5 @@
+server/
+*.md
+.git/
+node_modules/
+.env*
