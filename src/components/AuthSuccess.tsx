@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Container, Typography, CircularProgress, Alert, Box } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,39 +9,60 @@ const AuthSuccess: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [error, setError] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
     const handleAuthSuccess = async () => {
+      // Prevent multiple executions
+      if (hasProcessed.current || isProcessing) {
+        console.log('AuthSuccess: Already processed, skipping...');
+        return;
+      }
+
+      hasProcessed.current = true;
+      setIsProcessing(true);
+
       try {
+        console.log('AuthSuccess: Processing authentication...');
         // Extract token from URL parameters
         const params = new URLSearchParams(location.search);
         const token = params.get('token');
         const error = params.get('error');
 
+        console.log('AuthSuccess: Token found?', !!token);
+        console.log('AuthSuccess: Error found?', !!error);
+
         if (error) {
+          console.error('AuthSuccess: OAuth error:', error);
           setError(`Authentication failed: ${error}`);
           setTimeout(() => navigate('/login'), 3000);
           return;
         }
 
         if (!token) {
+          console.error('AuthSuccess: No token received');
           setError('No authentication token received');
           setTimeout(() => navigate('/login'), 3000);
           return;
         }
 
         // Login with the token
+        console.log('AuthSuccess: Attempting login...');
         await login(token);
-        navigate('/chat');
+        console.log('AuthSuccess: Login successful, redirecting to chat...');
+        navigate('/chat', { replace: true });
       } catch (error: any) {
         console.error('Auth success error:', error);
         setError('Failed to complete authentication');
         setTimeout(() => navigate('/login'), 3000);
+      } finally {
+        setIsProcessing(false);
       }
     };
 
     handleAuthSuccess();
-  }, [location, login, navigate]);
+  }, []); // Remove dependencies to prevent re-execution
 
   if (error) {
     return (
