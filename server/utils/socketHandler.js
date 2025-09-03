@@ -2,6 +2,25 @@ const Message = require('../models/Message');
 const User = require('../models/User');
 const Room = require('../models/Room');
 const { authenticateSocket } = require('../middleware/auth');
+const { MAX_MESSAGE_LENGTH, MESSAGE_RATE_LIMIT, REACTION_RATE_LIMIT, ALLOWED_MESSAGE_TYPES } = require('../config/constants');
+
+// Simple in-memory token buckets (acceptable for single-instance deployments; replace with Redis for scaling)
+const messageBuckets = new Map(); // key: userId, value: { count, reset }
+const reactionBuckets = new Map();
+
+function checkBucket(map, key, limitCfg) {
+  const now = Date.now();
+  let bucket = map.get(key);
+  if (!bucket || bucket.reset < now) {
+    bucket = { count: 0, reset: now + limitCfg.windowMs };
+    map.set(key, bucket);
+  }
+  if (bucket.count >= limitCfg.max) {
+    return { allowed: false, retryAfter: Math.ceil((bucket.reset - now) / 1000) };
+  }
+  bucket.count += 1;
+  return { allowed: true, retryAfter: 0 };
+}
 
 const socketHandler = (io) => {
   // Authentication middleware for socket connections
@@ -75,15 +94,35 @@ const socketHandler = (io) => {
     });
 
     // Handle sending a message
-    socket.on('send_message', async (data) => {
+  socket.on('send_message', async (data) => {
       try {
-        const { roomId, content, messageType = 'text', replyTo } = data;
+    const { roomId, content, messageType = 'text', replyTo } = data || {};
 
-        // Validate input
-        if (!roomId || !content || content.trim().length === 0) {
-          socket.emit('error', { message: 'Invalid message data' });
-          return;
-        }
+    // Basic shape validation
+    if (!roomId || typeof content !== 'string') {
+      socket.emit('error', { message: 'Invalid message payload' });
+      return;
+    }
+    const trimmed = content.trim();
+    if (!trimmed) {
+      socket.emit('error', { message: 'Message cannot be empty' });
+      return;
+    }
+    if (trimmed.length > MAX_MESSAGE_LENGTH) {
+      socket.emit('error', { message: `Message exceeds max length (${MAX_MESSAGE_LENGTH})` });
+      return;
+    }
+    if (!ALLOWED_MESSAGE_TYPES.includes(messageType)) {
+      socket.emit('error', { message: 'Unsupported message type' });
+      return;
+    }
+
+    // Per-user rate bucket (not IP-based)
+    const bucketRes = checkBucket(messageBuckets, socket.userId, MESSAGE_RATE_LIMIT);
+    if (!bucketRes.allowed) {
+      socket.emit('error', { message: 'Message rate limit exceeded', retryAfter: bucketRes.retryAfter });
+      return;
+    }
 
         // Verify user is member of the room
         const room = await Room.findById(roomId);
@@ -95,7 +134,7 @@ const socketHandler = (io) => {
         // Create and save message
         const message = new Message({
           sender: socket.userId,
-          content: content.trim(),
+          content: trimmed,
           room: roomId,
           messageType,
           replyTo: replyTo || undefined
@@ -149,6 +188,17 @@ const socketHandler = (io) => {
       try {
         const { messageId, emoji } = data;
 
+        if (!messageId || typeof emoji !== 'string' || emoji.length > 16) {
+          socket.emit('error', { message: 'Invalid reaction data' });
+          return;
+        }
+
+        const bucketRes = checkBucket(reactionBuckets, socket.userId, REACTION_RATE_LIMIT);
+        if (!bucketRes.allowed) {
+          socket.emit('error', { message: 'Reaction rate limit exceeded', retryAfter: bucketRes.retryAfter });
+          return;
+        }
+
         const message = await Message.findById(messageId);
         if (!message) {
           socket.emit('error', { message: 'Message not found' });
@@ -172,6 +222,11 @@ const socketHandler = (io) => {
     socket.on('remove_reaction', async (data) => {
       try {
         const { messageId } = data;
+
+        if (!messageId) {
+          socket.emit('error', { message: 'Invalid reaction removal data' });
+          return;
+        }
 
         const message = await Message.findById(messageId);
         if (!message) {
@@ -197,8 +252,17 @@ const socketHandler = (io) => {
       try {
         const { messageId, content } = data;
 
-        if (!messageId || !content || content.trim().length === 0) {
-          socket.emit('error', { message: 'Invalid edit data' });
+        if (!messageId || typeof content !== 'string') {
+          socket.emit('error', { message: 'Invalid edit payload' });
+          return;
+        }
+        const trimmed = content.trim();
+        if (!trimmed) {
+          socket.emit('error', { message: 'Message cannot be empty' });
+          return;
+        }
+        if (trimmed.length > MAX_MESSAGE_LENGTH) {
+          socket.emit('error', { message: `Edited message exceeds max length (${MAX_MESSAGE_LENGTH})` });
           return;
         }
 
@@ -223,7 +287,7 @@ const socketHandler = (io) => {
         }
 
         // Update message
-        message.content = content.trim();
+  message.content = trimmed;
         message.edited = true;
         message.editedAt = new Date();
         await message.save();
@@ -257,7 +321,7 @@ const socketHandler = (io) => {
     });
 
     // Handle deleting a message
-    socket.on('delete_message', async (data) => {
+  socket.on('delete_message', async (data) => {
       try {
         const { messageId } = data;
 

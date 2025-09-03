@@ -24,7 +24,9 @@
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
-    "socket.io": "^4.7.2"
+  "socket.io": "^4.7.2",
+  "pino": "^9.3.2",
+  "pino-http": "^10.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
