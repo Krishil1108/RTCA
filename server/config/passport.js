@@ -8,7 +8,9 @@ const User = require('../models/User');
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "/api/auth/google/callback"
+  callbackURL: process.env.NODE_ENV === 'production' 
+    ? "/api/auth/google/callback"  // Render will use the full domain automatically
+    : "/api/auth/google/callback"  // Local development
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     console.log('Google OAuth Strategy - Processing user:', profile.displayName, profile.emails[0]?.value);
