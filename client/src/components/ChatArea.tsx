@@ -250,14 +250,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           zIndex: 10,
         }}
       >
-        <Box sx={{ 
+  <Box sx={{ 
           px: { xs: 2, md: 3 },
           py: { xs: 1.5, md: 2 },
           display: 'flex',
           alignItems: 'center',
           gap: { xs: 1.5, md: 2 },
           minHeight: { xs: 60, md: 70 },
-        }}>
+  }}>
           {/* Left Section */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
             {/* Back Button for Mobile */}
@@ -487,8 +487,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
         )}
       </Box>
 
-      {/* Bottom Input Area - Mobile Optimized */}
-    <Paper
+  {/* Bottom Input Area - Mobile Optimized */}
+  <Paper
         elevation={0}
         sx={{
           flexShrink: 0,
@@ -699,7 +699,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,.csv,.zip,.rar"
           style={{ display: 'none' }}
         />
-      </Paper>
+  </Paper>
       {/* Scroll to Bottom Floating Button */}
       <Zoom in={showScrollToBottom}>
         <Fab
