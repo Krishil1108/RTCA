@@ -23,7 +23,7 @@ MONGODB_URI=mongodb+srv://shahkrishil1108:Krishil%401108@cluster0.wmqwufd.mongod
 JWT_SECRET=production-jwt-secret-key-change-this
 GOOGLE_CLIENT_ID=643573413997-avp1s4kqq3r43k0ancal09s3fs3t2cr5.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=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
-CLIENT_URL=https://your-vercel-app.vercel.app
+CLIENT_URL=https://your-vercel-frontend-url.vercel.app
 SESSION_SECRET=production-session-secret-key
 ```
 

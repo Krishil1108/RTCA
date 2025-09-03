@@ -1,6 +1,6 @@
 // API Configuration
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-export const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://arizta.onrender.com/api';
+export const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'https://arizta.onrender.com';
 
 // Authentication
 export const GOOGLE_OAUTH_URL = `${API_BASE_URL}/auth/google`;
