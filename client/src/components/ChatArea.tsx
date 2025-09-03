@@ -210,10 +210,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           borderBottom: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
+          // Handle safe areas for mobile devices
+          paddingTop: 'env(safe-area-inset-top, 0px)',
           // Ensure header stays fixed on mobile
           '@supports (-webkit-touch-callout: none)': {
             // iOS specific styles
             position: 'fixed',
+            top: 0,
+          },
+          // For mobile devices with notches/safe areas
+          '@media (max-width: 768px)': {
+            paddingTop: 'env(safe-area-inset-top, 0px)',
           },
         }}
       >
@@ -325,7 +332,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
       <Box
         sx={{
           position: 'fixed',
-          top: { xs: 60, md: 70 }, // Height of header
+          top: { 
+            xs: 'calc(60px + env(safe-area-inset-top, 0px))', 
+            md: 'calc(70px + env(safe-area-inset-top, 0px))' 
+          }, // Height of header + safe area
           bottom: { xs: 80, md: 90 }, // Height of bottom input area
           left: 0,
           right: 0,
