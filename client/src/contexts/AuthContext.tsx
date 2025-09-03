@@ -1,7 +1,10 @@
-import React, { createContext, useContext, useReducer, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, ReactNode, useState } from 'react';
 import { User } from '../services/authService';
 import { LOCAL_STORAGE_KEYS } from '../config/constants';
 import authService from '../services/authService';
+import { useRateLimitHandler, checkPersistedRateLimit } from '../hooks/useRateLimitHandler';
+import RateLimitHandler from '../components/RateLimitHandler';
+import { AxiosError } from 'axios';
 
 interface AuthState {
   user: User | null;
@@ -78,6 +81,8 @@ interface AuthContextType extends AuthState {
   updateUser: (userData: Partial<User>) => void;
   updateProfile: (profileData: Partial<Pick<User, 'name' | 'about' | 'avatar'>>) => Promise<void>;
   clearError: () => void;
+  isRateLimited: boolean;
+  rateLimitInfo: { retryAfter: number; message: string } | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -98,6 +103,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const hasCheckedAuth = useRef(false);
   const isInitializing = useRef(false);
+  
+  // Rate limiting state
+  const { rateLimitState, handleRateLimit, clearRateLimit, retryAfterRateLimit } = useRateLimitHandler();
+  const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
+
+  // Check for persisted rate limit on mount
+  useEffect(() => {
+    const persistedRateLimit = checkPersistedRateLimit();
+    if (persistedRateLimit) {
+      setShowRateLimitDialog(true);
+    }
+  }, []);
+
+  // Show rate limit dialog when rate limit state changes
+  useEffect(() => {
+    setShowRateLimitDialog(rateLimitState.isRateLimited);
+  }, [rateLimitState.isRateLimited]);
 
   // Check for existing token on mount
   useEffect(() => {
@@ -130,6 +152,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         dispatch({ type: 'AUTH_SUCCESS', payload: response.user });
       } catch (error: any) {
         console.error('AuthContext: Token verification failed:', error);
+        
+        // Handle rate limiting
+        if (handleRateLimit(error as AxiosError)) {
+          console.log('Rate limit detected during token verification');
+          return; // Exit early, rate limit handler will show dialog
+        }
+        
         localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
         localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_DATA);
         dispatch({ type: 'AUTH_FAILURE', payload: error.response?.data?.message || 'Authentication failed' });
@@ -157,6 +186,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthContext: Login success dispatched');
     } catch (error: any) {
       console.error('AuthContext: Login failed:', error);
+      
+      // Handle rate limiting
+      if (handleRateLimit(error as AxiosError)) {
+        console.log('Rate limit detected during login');
+        return; // Exit early, rate limit handler will show dialog
+      }
+      
       localStorage.removeItem(LOCAL_STORAGE_KEYS.AUTH_TOKEN);
       localStorage.removeItem(LOCAL_STORAGE_KEYS.USER_DATA);
       dispatch({ type: 'AUTH_FAILURE', payload: error.response?.data?.message || 'Login failed' });
@@ -207,7 +243,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateUser,
     updateProfile,
     clearError,
+    isRateLimited: rateLimitState.isRateLimited,
+    rateLimitInfo: rateLimitState.isRateLimited ? {
+      retryAfter: rateLimitState.retryAfter,
+      message: rateLimitState.message
+    } : null,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <RateLimitHandler
+        open={showRateLimitDialog}
+        onClose={() => setShowRateLimitDialog(false)}
+        retryAfter={rateLimitState.retryAfter}
+        message={rateLimitState.message}
+        onRetry={retryAfterRateLimit}
+      />
+    </AuthContext.Provider>
+  );
 };

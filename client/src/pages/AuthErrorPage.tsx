@@ -23,12 +23,24 @@ const AuthErrorPage: React.FC = () => {
           title: 'Rate Limit Exceeded',
           message: 'Too many authentication requests. Google has temporarily limited access from this IP address.',
           suggestions: [
-            'Wait 15-60 minutes and try again',
-            'Use Demo Mode for testing',
+            'Wait 15-60 minutes before trying again',
+            'Use Demo Mode for immediate testing',
             'Try using an incognito/private browser window',
-            'Clear cookies for accounts.google.com'
+            'Clear cookies for accounts.google.com',
+            'Check if your IP is making too many requests'
           ],
           severity: 'warning' as const
+        };
+      case 'quota_exceeded':
+        return {
+          title: 'Service Quota Exceeded',
+          message: 'The authentication service has reached its daily quota limit.',
+          suggestions: [
+            'Try again tomorrow when quota resets',
+            'Use Demo Mode for immediate access',
+            'Contact support if this persists'
+          ],
+          severity: 'error' as const
         };
       case 'oauth_failed':
         return {
@@ -37,7 +49,8 @@ const AuthErrorPage: React.FC = () => {
           suggestions: [
             'Check your internet connection',
             'Try again in a few minutes',
-            'Use Demo Mode as an alternative'
+            'Use Demo Mode as an alternative',
+            'Ensure popup blockers are disabled'
           ],
           severity: 'error' as const
         };

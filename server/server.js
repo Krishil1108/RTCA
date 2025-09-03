@@ -72,20 +72,57 @@ mongoose.connect(mongoUri, {
 // Security middleware
 app.use(helmet());
 
-// Rate limiting (more lenient in development)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Much higher limit in development
-  message: 'Too many requests from this IP, please try again later.',
+// Enhanced Rate limiting with better configuration
+const createRateLimiter = (windowMs, max, message) => rateLimit({
+  windowMs,
+  max,
+  message: { error: message, retryAfter: Math.ceil(windowMs / 1000) },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skip: (req) => {
     // Skip rate limiting entirely in development
     if (process.env.NODE_ENV === 'development') {
       return true;
     }
+    // Skip for health checks
+    if (req.path === '/api/health') {
+      return true;
+    }
     return false;
+  },
+  handler: (req, res) => {
+    console.log(`Rate limit exceeded for IP: ${req.ip}, Path: ${req.path}`);
+    res.status(429).json({
+      error: message,
+      retryAfter: Math.ceil(windowMs / 1000),
+      timestamp: new Date().toISOString()
+    });
   }
 });
-app.use('/api/', limiter);
+
+// Different rate limits for different endpoints
+const generalLimiter = createRateLimiter(
+  15 * 60 * 1000, // 15 minutes
+  process.env.NODE_ENV === 'production' ? 200 : 2000, // Higher limit
+  'Too many requests from this IP, please try again later.'
+);
+
+const authLimiter = createRateLimiter(
+  15 * 60 * 1000, // 15 minutes
+  process.env.NODE_ENV === 'production' ? 50 : 500, // Auth endpoints
+  'Too many authentication attempts, please try again later.'
+);
+
+const strictLimiter = createRateLimiter(
+  1 * 60 * 1000, // 1 minute
+  process.env.NODE_ENV === 'production' ? 10 : 100, // Very strict
+  'Too many requests, please slow down.'
+);
+
+// Apply rate limiters
+app.use('/api/', generalLimiter);
+app.use('/api/auth/google', strictLimiter); // Strict limit for OAuth
+app.use('/api/auth/', authLimiter);
 
 // CORS configuration
 const corsOptions = {

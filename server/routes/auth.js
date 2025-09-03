@@ -32,6 +32,11 @@ router.get('/google',
 router.get('/google/callback',
   (req, res, next) => {
     console.log('OAuth callback received');
+    
+    // Add rate limiting check
+    const clientIP = req.ip || req.connection.remoteAddress;
+    console.log(`OAuth callback from IP: ${clientIP}`);
+    
     passport.authenticate('google', { session: false }, (err, user, info) => {
       console.log('OAuth authenticate result - err:', !!err, 'user:', !!user, 'info:', info);
       
@@ -40,13 +45,19 @@ router.get('/google/callback',
         const clientURL = process.env.CLIENT_URL || 'http://localhost:3000';
         
         // Handle rate limiting specifically
-        if (err.message && err.message.includes('rate')) {
+        if (err.message && (err.message.includes('rate') || err.message.includes('429'))) {
           console.log('Rate limit error detected');
-          return res.redirect(`${clientURL}/auth/error?error=rate_limit`);
+          return res.redirect(`${clientURL}/auth/error?error=rate_limit&message=Too many requests. Please try again in a few minutes.`);
+        }
+        
+        // Handle quota exceeded errors
+        if (err.message && err.message.includes('quota')) {
+          console.log('Quota exceeded error detected');
+          return res.redirect(`${clientURL}/auth/error?error=quota_exceeded&message=Service temporarily unavailable. Please try again later.`);
         }
         
         console.log('General OAuth error');
-        return res.redirect(`${clientURL}/auth/error?error=oauth_failed`);
+        return res.redirect(`${clientURL}/auth/error?error=oauth_failed&message=Authentication failed. Please try again.`);
       }
       
       if (!user) {
