@@ -1248,30 +1248,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           <Box 
             sx={{ 
               display: 'flex', 
-              alignItems: 'center', // Changed from flex-end to center
-              gap: { xs: 8, sm: 10, md: 12 }, // Reduced gaps
-              maxWidth: '100%',
-              overflow: 'hidden',
-              flexWrap: 'nowrap',
+              alignItems: 'flex-end',
+              gap: 1,
+              width: '100%',
             }}
           >
-            {/* Compact Emoji Button */}
+            {/* Emoji Button */}
             <Tooltip title="Emoji">
               <IconButton
                 size="small"
                 sx={{ 
                   color: isDarkMode ? '#8696a0' : '#54656f',
-                  width: { xs: 32, sm: 36, md: 40 },
-                  height: { xs: 32, sm: 36, md: 40 },
-                  minWidth: { xs: 32, sm: 36, md: 40 },
-                  flexShrink: 0,
-                  bgcolor: alpha(theme.palette.action.hover, 0.3),
-                  borderRadius: { xs: 6, md: 8 },
-                  transition: 'all 0.2s ease',
+                  mb: 0.5,
                   '&:hover': {
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
-                    transform: 'scale(1.05)',
                   },
                 }}
               >
@@ -1279,11 +1270,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               </IconButton>
             </Tooltip>
 
-            {/* Thin Message Input */}
+            {/* Message Input */}
             <TextField
               fullWidth
               multiline
-              maxRows={isMobile ? 2 : 3} // Reduced max rows
+              maxRows={3}
               placeholder="Type a message..."
               value={messageInput}
               onChange={handleInputChange}
@@ -1301,15 +1292,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                 }
               }}
               sx={{
-                flex: 1,
-                minWidth: 0,
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: { xs: 18, sm: 20, md: 24 }, // More rounded
-                  minHeight: { xs: 32, sm: 36, md: 40 }, // Reduced height significantly
+                  borderRadius: 3,
                   bgcolor: isDarkMode 
                     ? alpha(theme.palette.common.white, 0.08) 
                     : alpha(theme.palette.common.black, 0.04),
-                  transition: 'all 0.2s ease',
                   '& fieldset': {
                     border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
                   },
@@ -1318,43 +1305,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                   },
                   '&.Mui-focused fieldset': {
                     border: `2px solid ${theme.palette.primary.main}`,
-                    boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}`,
                   },
                   '& .MuiInputBase-input': {
-                    py: { xs: 8, sm: 10, md: 12 }, // Reduced padding significantly  
-                    px: { xs: 12, sm: 14, md: 16 },
-                    fontSize: { xs: '0.875rem', sm: '0.9rem', md: '0.95rem' },
-                    lineHeight: 1.2, // Reduced line height
+                    fontSize: '0.9rem',
                     '&::placeholder': {
                       color: alpha(theme.palette.text.secondary, 0.6),
                       fontStyle: 'italic',
                     },
-                    WebkitAppearance: 'none',
-                    WebkitUserSelect: 'text',
-                    WebkitTouchCallout: 'default',
                   },
                 },
               }}
             />
 
-            {/* Compact Attach Button */}
+            {/* Attach Button */}
             <Tooltip title="Attach file">
               <IconButton
                 size="small"
                 onClick={handleAttachClick}
                 sx={{ 
                   color: isDarkMode ? '#8696a0' : '#54656f',
-                  width: { xs: 32, sm: 36, md: 40 },
-                  height: { xs: 32, sm: 36, md: 40 },
-                  minWidth: { xs: 32, sm: 36, md: 40 },
-                  flexShrink: 0,
-                  bgcolor: alpha(theme.palette.action.hover, 0.3),
-                  borderRadius: { xs: 6, md: 8 },
-                  transition: 'all 0.2s ease',
+                  mb: 0.5,
                   '&:hover': {
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
-                    transform: 'scale(1.05) rotate(15deg)',
+                    transform: 'rotate(15deg)',
                   },
                 }}
               >
@@ -1362,7 +1336,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               </IconButton>
             </Tooltip>
 
-            {/* Compact Send/Voice Button */}
+            {/* Send or Voice Button */}
             {messageInput.trim() || attachedFiles.length > 0 ? (
               <Zoom in timeout={200}>
                 <IconButton
@@ -1370,21 +1344,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                   sx={{
                     bgcolor: theme.palette.primary.main,
                     color: 'white',
-                    width: { xs: 32, sm: 36, md: 40 },
-                    height: { xs: 32, sm: 36, md: 40 },
-                    minWidth: { xs: 32, sm: 36, md: 40 },
-                    maxWidth: { xs: 32, sm: 36, md: 40 }, // Ensure maximum width
-                    flexShrink: 0,
-                    borderRadius: '50%',
-                    boxShadow: theme.shadows[3],
-                    transition: 'all 0.2s ease',
+                    width: 40,
+                    height: 40,
+                    mb: 0.5,
                     '&:hover': {
                       bgcolor: theme.palette.primary.dark,
-                      transform: 'scale(1.05)',
-                      boxShadow: theme.shadows[6],
-                    },
-                    '&:active': {
-                      transform: 'scale(0.95)',
+                      transform: 'scale(1.1)',
                     },
                   }}
                 >
@@ -1396,18 +1361,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                 <IconButton
                   sx={{ 
                     color: isDarkMode ? '#8696a0' : '#54656f',
-                    width: { xs: 32, sm: 36, md: 40 },
-                    height: { xs: 32, sm: 36, md: 40 },
-                    minWidth: { xs: 32, sm: 36, md: 40 },
-                    maxWidth: { xs: 32, sm: 36, md: 40 }, // Ensure maximum width
-                    flexShrink: 0,
-                    bgcolor: alpha(theme.palette.action.hover, 0.3),
-                    borderRadius: '50%',
-                    transition: 'all 0.2s ease',
+                    mb: 0.5,
                     '&:hover': {
                       bgcolor: alpha(theme.palette.primary.main, 0.1),
                       color: theme.palette.primary.main,
-                      transform: 'scale(1.05)',
                     },
                   }}
                 >
