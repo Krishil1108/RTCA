@@ -163,29 +163,58 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
   return (
     <Box
       sx={{
-        height: '100vh',
+        height: ['100vh', '100dvh'], // Fallback for browsers that don't support dvh
         display: 'flex',
         flexDirection: 'column',
+        position: 'fixed', // Fix the entire chat area
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'hidden',
         background: isDarkMode 
           ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
           : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-        // Prevent zoom on input focus (iOS Safari)
+        // Prevent zoom on input focus and handle mobile keyboards
         '@media (max-width: 768px)': {
           fontSize: '16px',
+          // Prevent viewport scaling when keyboard appears
+          position: 'fixed',
+          height: '100vh', // Use viewport height on mobile
+          '& input, & textarea': {
+            fontSize: '16px', // Prevents zoom on iOS
+            resize: 'none',
+          },
+          // Handle iOS keyboard
+          '@supports (-webkit-touch-callout: none)': {
+            height: '100vh',
+            minHeight: '100vh',
+            maxHeight: '100vh',
+          },
         },
       }}
     >
-      {/* Mobile-First Header */}
+      {/* Fixed Header */}
       <Paper
         elevation={0}
         sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
           flexShrink: 0,
           background: isDarkMode 
             ? 'rgba(30, 41, 59, 0.95)' 
             : 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           borderBottom: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
-          zIndex: 10,
+          // Ensure header stays fixed on mobile
+          '@supports (-webkit-touch-callout: none)': {
+            // iOS specific styles
+            position: 'fixed',
+          },
         }}
       >
         <Box sx={{ 
@@ -292,10 +321,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
         </Box>
       </Paper>
 
-      {/* Messages Area - Mobile Optimized with Perfect Height Management */}
+      {/* Messages Area - Positioned between fixed header and bottom bar */}
       <Box
         sx={{
-          flex: 1,
+          position: 'fixed',
+          top: { xs: 60, md: 70 }, // Height of header
+          bottom: { xs: 80, md: 90 }, // Height of bottom input area
+          left: 0,
+          right: 0,
           overflow: 'auto',
           overflowX: 'hidden',
           // Perfect mobile scrolling
@@ -304,10 +337,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           background: isDarkMode 
             ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
             : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-          position: 'relative',
-          // Ensure proper height calculation
-          height: 0, // Important: allows flex: 1 to work properly
-          minHeight: 0, // Important: prevents flex item from growing beyond parent
           // Mobile padding
           p: { xs: 1, md: 2 },
           // Clean scrollbar styling - hidden on mobile for cleaner look
@@ -410,17 +439,31 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
         )}
       </Box>
 
-      {/* Bottom Input Area - Mobile Optimized */}
+      {/* Fixed Bottom Input Area - Stays at bottom even with keyboard */}
       <Paper
         elevation={0}
         sx={{
-          flexShrink: 0,
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
           background: isDarkMode 
             ? 'rgba(30, 41, 59, 0.95)' 
             : 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           borderTop: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
           p: { xs: 1.5, md: 2 },
+          // Prevent keyboard from pushing this up on mobile
+          '@supports (-webkit-touch-callout: none)': {
+            // iOS specific styles
+            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+          },
+          // Android specific
+          '@media (max-width: 768px)': {
+            paddingBottom: 'max(1.5rem, env(keyboard-inset-height, 0px))',
+          },
         }}
       >
         {/* Reply Preview */}
@@ -549,7 +592,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
             <AttachFileIcon fontSize="small" />
           </IconButton>
 
-          {/* Send or Voice Button */}
+          {/* Voice Button - Always visible */}
+          <IconButton
+            sx={{ 
+              color: isDarkMode ? '#8696a0' : '#54656f',
+              mb: 0.5,
+              '&:hover': {
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: theme.palette.primary.main,
+              },
+            }}
+          >
+            <MicIcon fontSize="small" />
+          </IconButton>
+
+          {/* Send Button - Only visible when there's content */}
           {messageInput.trim() || attachedFiles.length > 0 ? (
             <Zoom in timeout={200}>
               <IconButton
@@ -569,20 +626,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                 <SendIcon fontSize="small" />
               </IconButton>
             </Zoom>
-          ) : (
-            <IconButton
-              sx={{ 
-                color: isDarkMode ? '#8696a0' : '#54656f',
-                mb: 0.5,
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  color: theme.palette.primary.main,
-                },
-              }}
-            >
-              <MicIcon fontSize="small" />
-            </IconButton>
-          )}
+          ) : null}
         </Box>
 
         {/* Character count */}
