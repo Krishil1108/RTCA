@@ -1,1 +1,8 @@
-/* /index.html 200
+# Redirect all routes to index.html for React Router
+/*    /index.html   200
+
+# Specific auth routes
+/auth/success    /index.html   200
+/auth/error      /index.html   200
+/login           /index.html   200
+/chat            /index.html   200
