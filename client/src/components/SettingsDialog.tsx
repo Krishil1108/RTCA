@@ -26,9 +26,6 @@ import {
   Security as PrivacyIcon,
   Storage as DataIcon,
   Help as HelpIcon,
-  Brightness4 as Brightness4Icon,
-  Brightness7 as Brightness7Icon,
-  BrightnessAuto as BrightnessAutoIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useAriztaTheme } from '../contexts/ThemeContext';

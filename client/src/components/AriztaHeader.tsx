@@ -29,7 +29,6 @@ import {
   Notifications as NotificationsIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
-import { useAriztaTheme } from '../contexts/ThemeContext';
 
 interface AriztaHeaderProps {
   title?: string;

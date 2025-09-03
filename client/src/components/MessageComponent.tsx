@@ -5,7 +5,6 @@ import {
   Typography,
   Paper,
   Chip,
-  Tooltip,
   alpha,
 } from '@mui/material';
 import { Reply as ReplyIcon } from '@mui/icons-material';
@@ -32,7 +31,6 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
   // Swipe detection state
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
-  const [isReplyAnimating, setIsReplyAnimating] = useState(false);
   const [swipeProgress, setSwipeProgress] = useState(0);
   
   const { isDarkMode } = useAriztaTheme();
@@ -66,10 +64,8 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
     
     // Check if it's a swipe to reply (swipe right)
     if (deltaX > 50 && deltaY < 50 && onReply) {
-      setIsReplyAnimating(true);
       onReply(message);
       setTimeout(() => {
-        setIsReplyAnimating(false);
         setSwipeProgress(0);
       }, 300);
     } else {

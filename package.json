@@ -12,6 +12,7 @@
     "install-client": "cd client && npm install",
     "install-all": "npm run install-server && npm run install-client",
     "start": "cd server && node server.js",
+    "vercel-build": "react-scripts build",
     "render-build": "cd server && npm install",
     "render-start": "cd server && node server.js"
   },

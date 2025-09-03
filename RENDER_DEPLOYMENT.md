@@ -19,12 +19,12 @@ Add these in Render dashboard under "Environment":
 ```
 NODE_ENV=production
 PORT=10000
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxxx.mongodb.net/rtca-chat?retryWrites=true&w=majority
-JWT_SECRET=<generate-strong-random-secret>
-GOOGLE_CLIENT_ID=<your-google-oauth-client-id>
-GOOGLE_CLIENT_SECRET=<your-google-oauth-client-secret>
-CLIENT_URL=https://your-frontend-domain
-SESSION_SECRET=<generate-strong-random-session-secret>
+MONGODB_URI=mongodb+srv://shahkrishil1108:Krishil%401108@cluster0.wmqwufd.mongodb.net/rtca-chat?retryWrites=true&w=majority
+JWT_SECRET=production-jwt-secret-key-change-this
+GOOGLE_CLIENT_ID=643573413997-avp1s4kqq3r43k0ancal09s3fs3t2cr5.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+CLIENT_URL=https://your-vercel-frontend-url.vercel.app
+SESSION_SECRET=production-session-secret-key
 ```
 
 ### 3. Alternative: Deploy from Root
@@ -47,9 +47,9 @@ Start Command: npm run render-start
 3. Verify Node.js version compatibility
 
 ### Connection Issues:
-1. Update CLIENT_URL to your deployed frontend URL (e.g., Netlify/Render/Custom Domain)
-2. Add the Render backend URL to the frontend API configuration
-3. Check MongoDB Atlas IP whitelist (add 0.0.0.0/0 for Render or specific egress ranges)
+1. Update CLIENT_URL to your Vercel frontend URL
+2. Add Render backend URL to frontend API configuration
+3. Check MongoDB Atlas IP whitelist (add 0.0.0.0/0 for Render)
 
 ## 📋 Post-Deployment:
 1. Update frontend API base URL to point to Render backend

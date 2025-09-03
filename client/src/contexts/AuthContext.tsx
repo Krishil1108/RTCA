@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isInitializing = useRef(false);
   
   // Rate limiting state
-  const { rateLimitState, handleRateLimit, clearRateLimit, retryAfterRateLimit } = useRateLimitHandler();
+  const { rateLimitState, handleRateLimit, retryAfterRateLimit } = useRateLimitHandler();
   const [showRateLimitDialog, setShowRateLimitDialog] = useState(false);
 
   // Check for persisted rate limit on mount
@@ -168,7 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     checkAuth();
-  }, []);
+  }, [handleRateLimit]);
 
   const login = async (token: string) => {
     console.log('AuthContext: Login called with token:', !!token);

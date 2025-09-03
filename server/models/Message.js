@@ -10,7 +10,7 @@ const messageSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    maxlength: 2000
+    maxlength: 1000
   },
   room: {
     type: String,
@@ -19,7 +19,7 @@ const messageSchema = new mongoose.Schema({
   },
   messageType: {
     type: String,
-    enum: ['text', 'image', 'video', 'audio', 'file', 'system', 'deleted'],
+    enum: ['text', 'image', 'file', 'system', 'deleted'],
     default: 'text'
   },
   edited: {
