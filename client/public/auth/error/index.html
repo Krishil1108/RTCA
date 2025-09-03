@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Arizta - Real-time chat application" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Arizta - Authentication Error</title>
+    <script>
+        // Redirect to main app for error handling
+        setTimeout(function() {
+            window.location.href = '/login?error=' + encodeURIComponent(new URLSearchParams(window.location.search).get('error') || 'oauth_failed');
+        }, 2000);
+    </script>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root">
+        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+            <div style="text-align: center;">
+                <div style="color: #e74c3c; font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                <p>Authentication Error</p>
+                <p>Redirecting to login...</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
