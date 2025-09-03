@@ -362,6 +362,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
 
   return (
     <Box
+      className={isMobile ? 'chat-container mobile-scroll mobile-text' : ''}
       sx={{
         height: '100%',
         display: 'flex',
@@ -369,6 +370,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
         position: 'relative',
         overflow: 'hidden',
         maxWidth: '100%',
+        // Mobile-specific viewport fixes
+        minHeight: { xs: '100vh', md: '100%' },
+        // Prevent mobile browser zoom on input focus
+        '@media (max-width: 768px)': {
+          fontSize: '16px', // Prevents zoom on iOS
+        },
         background: isDarkMode 
           ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 50%, rgba(51, 65, 85, 0.9) 100%)'
           : 'linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.9) 50%, rgba(226, 232, 240, 0.9) 100%)',
@@ -893,18 +900,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
         )}
       </Paper>
 
-      {/* Messages Area with Enhanced Glassmorphism Styling */}
+      {/* Messages Area with Enhanced Mobile Support */}
       <Box
         sx={{
           flexGrow: 1,
           overflow: 'auto',
           overflowX: 'hidden',
           position: 'relative',
+          // Mobile-optimized scrolling
+          WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+          scrollBehavior: 'smooth',
+          // Better touch handling on mobile
+          touchAction: 'pan-y',
           background: isDarkMode 
             ? 'linear-gradient(135deg, rgba(11, 20, 26, 0.7) 0%, rgba(15, 23, 42, 0.8) 50%, rgba(30, 41, 59, 0.7) 100%)'
             : 'linear-gradient(135deg, rgba(240, 242, 245, 0.7) 0%, rgba(248, 250, 252, 0.8) 50%, rgba(241, 245, 249, 0.7) 100%)',
           backdropFilter: 'blur(15px) saturate(170%)',
           WebkitBackdropFilter: 'blur(15px) saturate(170%)',
+          // Mobile-specific padding
+          p: { xs: 0.5, sm: 1, md: 1.5 },
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -946,28 +960,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
             position: 'relative',
             zIndex: 2,
           },
+          // Enhanced scrollbar styling
           '&::-webkit-scrollbar': {
-            width: '8px',
+            width: { xs: '4px', md: '8px' },
           },
           '&::-webkit-scrollbar-track': {
             background: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            background: isDarkMode 
-              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)'
-              : 'linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%)',
-            borderRadius: '4px',
-            border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
+            background: alpha(isDarkMode ? '#ffffff' : '#000000', 0.2),
+            borderRadius: '10px',
+            border: 'none',
+            '&:hover': {
+              background: alpha(isDarkMode ? '#ffffff' : '#000000', 0.3),
+            },
           },
-          '&::-webkit-scrollbar-thumb:hover': {
-            background: isDarkMode 
-              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%)'
-              : 'linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.2) 100%)',
+          '&::-webkit-scrollbar-corner': {
+            background: 'transparent',
           },
-          scrollBehavior: 'smooth',
-          WebkitOverflowScrolling: 'touch',
+          // Firefox scrollbar
+          scrollbarWidth: 'thin',
+          scrollbarColor: `${alpha(isDarkMode ? '#ffffff' : '#000000', 0.2)} transparent`,
         }}
       >
         {roomMessages.length === 0 ? (
@@ -1099,7 +1112,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
             <div ref={messagesEndRef} />
             </Box>
           )}
-        </Box>      {/* Modern Message Input */}
+        </Box>
+
+      {/* Mobile-Optimized Message Input */}
       <Paper
         elevation={0}
         sx={{
@@ -1113,7 +1128,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           position: 'relative',
           overflow: 'hidden',
           maxWidth: '100%',
-          minHeight: { xs: 60, md: 'auto' },
+          // Mobile keyboard handling
+          '@supports (env(keyboard-inset-height))': {
+            paddingBottom: 'env(keyboard-inset-height)',
+          },
+          // Safe area insets for mobile notches
+          paddingBottom: { xs: 'env(safe-area-inset-bottom, 0px)', md: 0 },
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&::before': {
             content: '""',
@@ -1241,25 +1261,45 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
             </Box>
         )}
 
-        {/* Input Form */}
-        <Box component="form" onSubmit={handleMessageSubmit} sx={{ p: { xs: 1, md: 2 }, overflow: 'hidden', maxWidth: '100%' }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: { xs: 0.5, md: 1 }, overflow: 'hidden', maxWidth: '100%' }}>
-            {/* Emoji Button */}
+        {/* Input Form - Mobile Optimized */}
+        <Box 
+          component="form" 
+          onSubmit={handleMessageSubmit} 
+          sx={{ 
+            p: { xs: 0.75, sm: 1, md: 2 },
+            maxWidth: '100%',
+            overflow: 'hidden',
+          }}
+        >
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'flex-end', 
+              gap: { xs: 0.5, sm: 0.75, md: 1 },
+              maxWidth: '100%',
+              overflow: 'hidden',
+              // Ensure proper layout on small screens
+              flexWrap: 'nowrap',
+            }}
+          >
+            {/* Emoji Button - Smaller on mobile */}
             <Tooltip title="Emoji">
               <IconButton
                 size="small"
                 sx={{ 
                   color: isDarkMode ? '#ffffff' : '#000000',
                   mb: 0.2,
-                  minWidth: { xs: 36, md: 40 },
-                  height: { xs: 36, md: 40 },
+                  width: { xs: 32, sm: 36, md: 40 },
+                  height: { xs: 32, sm: 36, md: 40 },
+                  minWidth: { xs: 32, sm: 36, md: 40 },
+                  flexShrink: 0, // Prevent shrinking
                   background: isDarkMode 
                     ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
                     : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
                   backdropFilter: 'blur(8px) saturate(150%)',
                   WebkitBackdropFilter: 'blur(8px) saturate(150%)',
                   border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
-                  borderRadius: '12px',
+                  borderRadius: { xs: '8px', md: '12px' },
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
                     background: isDarkMode 
@@ -1267,8 +1307,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                       : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
                     border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                     color: theme.palette.primary.main,
-                    transform: 'translateY(-2px) scale(1.05)',
-                    boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    transform: 'translateY(-1px) scale(1.02)',
+                    boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
                   },
                 }}
               >
@@ -1276,7 +1316,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               </IconButton>
             </Tooltip>
 
-            {/* Message Input */}
+            {/* Message Input - Flexible width */}
             <TextField
               fullWidth
               multiline
@@ -1291,6 +1331,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               autoCorrect="off"
               autoCapitalize="sentences"
               inputMode="text"
+              className={isMobile ? 'mobile-input' : ''}
               onTouchStart={() => {
                 // Ensure input gets focus on mobile touch
                 if (isMobile && inputRef.current) {
@@ -1298,9 +1339,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                 }
               }}
               sx={{
+                flex: 1, // Take remaining space
+                minWidth: 0, // Allow shrinking
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: { xs: 20, md: 12 },
-                  minHeight: { xs: 40, md: 48 },
+                  borderRadius: { xs: 16, sm: 18, md: 12 },
+                  minHeight: { xs: 36, sm: 40, md: 48 },
                   background: isDarkMode 
                     ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.08) 100%)'
                     : 'linear-gradient(135deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.08) 100%)',
@@ -1326,13 +1369,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                       ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.16) 100%)'
                       : 'linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.16) 100%)',
                     border: `2px solid ${alpha(theme.palette.primary.main, 0.8)}`,
-                    boxShadow: `0 0 0 4px ${alpha(theme.palette.primary.main, 0.1)}, 0 8px 24px rgba(59, 130, 246, 0.2)`,
-                    transform: 'translateY(-2px)',
+                    boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}, 0 6px 20px rgba(59, 130, 246, 0.2)`,
+                    transform: 'translateY(-1px)',
                   },
                   '& .MuiInputBase-input': {
-                    py: { xs: 1, md: 2 },
-                    px: { xs: 2, md: 2 },
-                    fontSize: { xs: '0.9rem', md: '0.95rem' },
+                    py: { xs: 0.75, sm: 1, md: 2 },
+                    px: { xs: 1.5, sm: 2, md: 2 },
+                    fontSize: { xs: '0.875rem', sm: '0.9rem', md: '0.95rem' },
                     color: isDarkMode ? '#ffffff' : '#000000',
                     fontWeight: 400,
                     lineHeight: 1.4,
@@ -1349,7 +1392,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               }}
             />
 
-            {/* Attach Button */}
+            {/* Attach Button - Smaller on mobile */}
             <Tooltip title="Attach file">
               <IconButton
                 size="small"
@@ -1357,15 +1400,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                 sx={{ 
                   color: isDarkMode ? '#ffffff' : '#000000',
                   mb: 0.2,
-                  minWidth: { xs: 36, md: 40 },
-                  height: { xs: 36, md: 40 },
+                  width: { xs: 32, sm: 36, md: 40 },
+                  height: { xs: 32, sm: 36, md: 40 },
+                  minWidth: { xs: 32, sm: 36, md: 40 },
+                  flexShrink: 0, // Prevent shrinking
                   background: isDarkMode 
                     ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
                     : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
                   backdropFilter: 'blur(8px) saturate(150%)',
                   WebkitBackdropFilter: 'blur(8px) saturate(150%)',
                   border: `1px solid ${alpha(isDarkMode ? '#ffffff' : '#000000', 0.1)}`,
-                  borderRadius: '12px',
+                  borderRadius: { xs: '8px', md: '12px' },
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
                     background: isDarkMode 
@@ -1373,8 +1418,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                       : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
                     border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                     color: theme.palette.primary.main,
-                    transform: 'translateY(-2px) rotate(15deg) scale(1.05)',
-                    boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    transform: 'translateY(-1px) rotate(10deg) scale(1.02)',
+                    boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
                   },
                 }}
               >
@@ -1382,7 +1427,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
               </IconButton>
             </Tooltip>
 
-            {/* Send or Voice Button */}
+            {/* Send or Voice Button - Fixed size to prevent overflow */}
             {messageInput.trim() || attachedFiles.length > 0 ? (
               <Zoom in timeout={200}>
                 <IconButton
@@ -1394,12 +1439,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                     backdropFilter: 'blur(10px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(10px) saturate(180%)',
                     color: '#ffffff',
-                    width: { xs: 40, md: 48 },
-                    height: { xs: 40, md: 48 },
-                    minWidth: { xs: 40, md: 48 },
+                    width: { xs: 36, sm: 40, md: 48 },
+                    height: { xs: 36, sm: 40, md: 48 },
+                    minWidth: { xs: 36, sm: 40, md: 48 },
+                    flexShrink: 0, // Prevent shrinking
                     borderRadius: '50%',
                     border: `1px solid ${alpha('#ffffff', 0.2)}`,
-                    boxShadow: '0 8px 32px rgba(59, 130, 246, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    boxShadow: { 
+                      xs: '0 4px 16px rgba(59, 130, 246, 0.3), 0 1px 4px rgba(59, 130, 246, 0.2)',
+                      md: '0 8px 32px rgba(59, 130, 246, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                    },
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&::before': {
                       content: '""',
@@ -1416,11 +1465,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                       background: isDarkMode 
                         ? 'linear-gradient(135deg, rgba(37, 99, 235, 0.95) 0%, rgba(29, 78, 216, 0.95) 100%)'
                         : 'linear-gradient(135deg, rgba(37, 99, 235, 0.95) 0%, rgba(29, 78, 216, 0.95) 100%)',
-                      transform: 'translateY(-2px) scale(1.05)',
-                      boxShadow: '0 12px 40px rgba(59, 130, 246, 0.5), 0 4px 12px rgba(59, 130, 246, 0.4)',
+                      transform: 'translateY(-1px) scale(1.05)',
+                      boxShadow: { 
+                        xs: '0 6px 20px rgba(59, 130, 246, 0.4), 0 2px 8px rgba(59, 130, 246, 0.3)',
+                        md: '0 12px 40px rgba(59, 130, 246, 0.5), 0 4px 12px rgba(59, 130, 246, 0.4)'
+                      },
                     },
                     '&:active': {
-                      transform: 'translateY(-1px) scale(0.98)',
+                      transform: 'translateY(0) scale(0.98)',
                     },
                   }}
                 >
@@ -1432,9 +1484,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                 <IconButton
                   sx={{ 
                     color: isDarkMode ? '#ffffff' : '#000000',
-                    width: { xs: 40, md: 48 },
-                    height: { xs: 40, md: 48 },
-                    minWidth: { xs: 40, md: 48 },
+                    width: { xs: 36, sm: 40, md: 48 },
+                    height: { xs: 36, sm: 40, md: 48 },
+                    minWidth: { xs: 36, sm: 40, md: 48 },
+                    flexShrink: 0, // Prevent shrinking
                     background: isDarkMode 
                       ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)'
                       : 'linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%)',
@@ -1449,8 +1502,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                         : 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
                       border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                       color: theme.palette.primary.main,
-                      transform: 'translateY(-2px) scale(1.05)',
-                      boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
+                      transform: 'translateY(-1px) scale(1.05)',
+                      boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
                     },
                   }}
                 >

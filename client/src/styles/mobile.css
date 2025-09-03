@@ -1,0 +1,113 @@
+/* Mobile-specific optimizations for Arizta Chat */
+
+/* Prevent zoom on input focus for iOS */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    transform: translateZ(0);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+/* Enhanced touch targets for mobile */
+@media (max-width: 768px) {
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better scrolling for iOS */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Prevent pull-to-refresh on chat area */
+  .chat-container {
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  
+  /* Optimize text rendering */
+  .mobile-text {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Fix input focus issues */
+  .mobile-input {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Optimize animations for mobile */
+  .mobile-animate {
+    will-change: transform;
+    transform: translateZ(0);
+  }
+}
+
+/* Landscape mode optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  .landscape-optimize {
+    max-height: 100vh;
+    overflow: hidden;
+  }
+  
+  .landscape-input {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+  }
+}
+
+/* PWA viewport optimizations */
+@supports (display-mode: standalone) {
+  .pwa-safe-area {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Dark mode mobile optimizations */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  .mobile-dark-optimize {
+    color-scheme: dark;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-animate {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transform: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .mobile-contrast {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Mobile keyboard handling */
+@supports (env(keyboard-inset-height)) {
+  .keyboard-aware {
+    padding-bottom: env(keyboard-inset-height);
+  }
+}

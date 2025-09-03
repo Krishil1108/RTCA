@@ -1,3 +1,6 @@
+/* Import mobile optimizations */
+@import './styles/mobile.css';
+
 body {
   margin: 0;
   font-family: 'Kohinoor Devanagari', 'Noto Sans Devanagari', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,9 +8,42 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Mobile optimizations */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Prevent horizontal scrolling */
+  overflow-x: hidden;
+  /* Better mobile touch handling */
+  touch-action: manipulation;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Global mobile fixes */
+* {
+  box-sizing: border-box;
+}
+
+/* Mobile viewport optimizations */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  position: relative;
+  overflow-x: hidden;
+}
+
+#root {
+  height: 100%;
+  min-height: 100vh;
+  position: relative;
 }
