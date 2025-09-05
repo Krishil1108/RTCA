@@ -79,6 +79,7 @@ export interface Room {
     };
   };
   memberCount?: number;
+  unreadCount?: number;
   createdAt: string;
   updatedAt: string;
 }

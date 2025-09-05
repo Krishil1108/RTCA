@@ -256,6 +256,13 @@ class SocketService {
     }
   }
 
+  // Unread count updates
+  onUnreadCountUpdated(callback: (data: { roomId: string; unreadCount: number }) => void): void {
+    if (this.socket) {
+      this.socket.on(SOCKET_EVENTS.UNREAD_COUNT_UPDATED, callback);
+    }
+  }
+
   // Event cleanup
   off(event: string, callback?: (...args: any[]) => void): void {
     if (this.socket) {

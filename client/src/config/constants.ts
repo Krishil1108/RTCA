@@ -53,6 +53,9 @@ export const SOCKET_EVENTS = {
   MESSAGE_DELIVERED: 'message_delivered',
   MESSAGE_READ: 'message_read',
   
+  // Unread Counts
+  UNREAD_COUNT_UPDATED: 'unread_count_updated',
+  
   // Errors
   ERROR: 'error',
 } as const;

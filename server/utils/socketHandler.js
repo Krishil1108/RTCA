@@ -380,6 +380,19 @@ const socketHandler = (io) => {
         await message.markAsDelivered(socket.userId);
         await message.markAsRead(socket.userId);
         
+        // Get the room to calculate new unread count
+        const Room = require('../models/Room');
+        const room = await Room.findById(message.room);
+        if (room) {
+          const unreadCount = await room.getUnreadCount(socket.userId);
+          
+          // Emit unread count update to the user who read the message
+          socket.emit('unread_count_updated', {
+            roomId: message.room,
+            unreadCount
+          });
+        }
+        
         // Notify the sender about read status
         socket.to(message.room.toString()).emit('message_read', {
           messageId,

@@ -6,14 +6,36 @@ const User = require('../models/User');
 const router = express.Router();
 
 // @route   GET /api/chat/rooms
-// @desc    Get user's chat rooms
+// @desc    Get user's chat rooms with unread counts
 // @access  Private
 router.get('/rooms', async (req, res) => {
   try {
-    const rooms = await Room.getUserRooms(req.user._id);
+    const rooms = await Room.getUserRoomsWithUnreadCounts(req.user._id);
     res.json({ rooms });
   } catch (error) {
     console.error('Get rooms error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/chat/rooms/:roomId/unread-count
+// @desc    Get unread message count for a specific room
+// @access  Private
+router.get('/rooms/:roomId/unread-count', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user._id;
+
+    // Check if user is member of the room
+    const room = await Room.findById(roomId);
+    if (!room || !room.isMember(userId)) {
+      return res.status(403).json({ message: 'Access denied to this room' });
+    }
+
+    const unreadCount = await room.getUnreadCount(userId);
+    res.json({ unreadCount });
+  } catch (error) {
+    console.error('Get unread count error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -93,10 +115,23 @@ router.get('/rooms/:roomId/messages', async (req, res) => {
       .populate('sender', 'name email avatar')
       .populate('replyTo', 'content sender')
       .populate('reactions.user', 'name')
+      .populate('deliveredTo.user', 'name')
+      .populate('readBy.user', 'name')
       .exec();
 
+    // Transform messages to include read receipt status
+    const messagesWithStatus = messages.map(message => {
+      const messageObj = message.toObject({ virtuals: true });
+      return {
+        ...messageObj,
+        readReceiptStatus: message.readReceiptStatus,
+        deliveredTo: message.deliveredTo,
+        readBy: message.readBy
+      };
+    });
+
     res.json({ 
-      messages: messages.reverse(), // Reverse to get chronological order
+      messages: messagesWithStatus.reverse(), // Reverse to get chronological order
       hasMore: messages.length === limit 
     });
   } catch (error) {

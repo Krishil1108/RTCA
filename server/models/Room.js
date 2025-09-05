@@ -101,6 +101,53 @@ roomSchema.methods.getUserRole = function(userId) {
   return member ? member.role : null;
 };
 
+// Method to get unread message count for a specific user
+roomSchema.methods.getUnreadCount = async function(userId) {
+  const Message = require('./Message');
+  
+  try {
+    // Count messages in this room that haven't been read by the user
+    const unreadCount = await Message.countDocuments({
+      room: this._id,
+      sender: { $ne: userId }, // Not sent by the user themselves
+      'readBy.user': { $ne: userId } // Not read by the user
+    });
+    
+    return unreadCount;
+  } catch (error) {
+    console.error('Error calculating unread count:', error);
+    return 0;
+  }
+};
+
+// Static method to get user's rooms with unread counts
+roomSchema.statics.getUserRoomsWithUnreadCounts = async function(userId) {
+  try {
+    const rooms = await this.find({ 'members.user': userId })
+      .populate('members.user', 'name email avatar isOnline lastSeen')
+      .populate('lastMessage', 'content createdAt sender')
+      .populate('lastMessage.sender', 'name')
+      .sort({ updatedAt: -1 })
+      .exec();
+
+    // Add unread count to each room
+    const roomsWithUnreadCounts = await Promise.all(
+      rooms.map(async (room) => {
+        const unreadCount = await room.getUnreadCount(userId);
+        return {
+          ...room.toObject(),
+          unreadCount
+        };
+      })
+    );
+
+    return roomsWithUnreadCounts;
+  } catch (error) {
+    console.error('Error getting rooms with unread counts:', error);
+    return [];
+  }
+};
+
 // Static method to get user's rooms
 roomSchema.statics.getUserRooms = function(userId) {
   return this.find({ 'members.user': userId })

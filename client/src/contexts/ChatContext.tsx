@@ -23,6 +23,7 @@ type ChatAction =
   | { type: 'SET_ROOMS'; payload: Room[] }
   | { type: 'ADD_ROOM'; payload: Room }
   | { type: 'UPDATE_ROOM'; payload: Room }
+  | { type: 'UPDATE_ROOM_UNREAD_COUNT'; payload: { roomId: string; unreadCount: number } }
   | { type: 'SET_CURRENT_ROOM'; payload: string | null }
   | { type: 'SET_MESSAGES'; payload: { roomId: string; messages: Message[] } }
   | { type: 'ADD_MESSAGE'; payload: { roomId: string; message: Message } }
@@ -59,6 +60,15 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
         ...state,
         rooms: state.rooms.map(room =>
           room._id === action.payload._id ? action.payload : room
+        ),
+      };
+    case 'UPDATE_ROOM_UNREAD_COUNT':
+      return {
+        ...state,
+        rooms: state.rooms.map(room =>
+          room._id === action.payload.roomId 
+            ? { ...room, unreadCount: action.payload.unreadCount }
+            : room
         ),
       };
     case 'SET_CURRENT_ROOM':
@@ -298,6 +308,15 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           break;
         }
       }
+    });
+
+    // Unread count updates
+    socketService.onUnreadCountUpdated((data) => {
+      const { roomId, unreadCount } = data;
+      dispatch({
+        type: 'UPDATE_ROOM_UNREAD_COUNT',
+        payload: { roomId, unreadCount },
+      });
     });
   }, [state.typingUsers, state.currentRoom, state.messages]);
 

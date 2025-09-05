@@ -40,6 +40,7 @@ const AriztaChatList: React.FC<AriztaChatListProps> = ({ onChatSelect }) => {
   const { isDarkMode } = useAriztaTheme();
   const [startConversationOpen, setStartConversationOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'unread' | 'groups'>('all');
 
   const handleConversationCreated = async (roomId: string) => {
     await loadRooms();
@@ -52,6 +53,12 @@ const AriztaChatList: React.FC<AriztaChatListProps> = ({ onChatSelect }) => {
       return otherMember?.user.name || 'Unknown Contact';
     }
     return room.name;
+  };
+
+  const getReceiverName = (room: Room) => {
+    // For direct chats, return the other user's name
+    // For group chats, return the room name
+    return getContactName(room);
   };
 
   const getContactAvatar = (room: Room) => {
@@ -101,9 +108,21 @@ const AriztaChatList: React.FC<AriztaChatListProps> = ({ onChatSelect }) => {
     return false;
   };
 
-  const filteredRooms = rooms.filter(room =>
-    getContactName(room).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredRooms = rooms.filter(room => {
+    const matchesSearch = getReceiverName(room).toLowerCase().includes(searchQuery.toLowerCase());
+    
+    switch (filterType) {
+      case 'unread':
+        return matchesSearch && (room.unreadCount || 0) > 0;
+      case 'groups':
+        return matchesSearch && room.type === 'group';
+      case 'all':
+      default:
+        return matchesSearch;
+    }
+  });
+
+  const totalUnreadCount = rooms.reduce((total, room) => total + (room.unreadCount || 0), 0);
 
   if (isLoading) {
     return (
@@ -160,19 +179,24 @@ const AriztaChatList: React.FC<AriztaChatListProps> = ({ onChatSelect }) => {
           <Chip 
             label="All" 
             size="small" 
-            color="primary" 
+            color={filterType === 'all' ? 'primary' : 'default'}
+            onClick={() => setFilterType('all')}
             sx={{ borderRadius: 2 }}
           />
           <Chip 
-            label="Unread" 
+            label={`Unread${totalUnreadCount > 0 ? ` (${totalUnreadCount})` : ''}`}
             size="small" 
-            variant="outlined" 
+            color={filterType === 'unread' ? 'primary' : 'default'}
+            variant={filterType === 'unread' ? 'filled' : 'outlined'}
+            onClick={() => setFilterType('unread')}
             sx={{ borderRadius: 2 }}
           />
           <Chip 
             label="Groups" 
             size="small" 
-            variant="outlined" 
+            color={filterType === 'groups' ? 'primary' : 'default'}
+            variant={filterType === 'groups' ? 'filled' : 'outlined'}
+            onClick={() => setFilterType('groups')}
             sx={{ borderRadius: 2 }}
           />
         </Box>
@@ -223,12 +247,13 @@ const AriztaChatList: React.FC<AriztaChatListProps> = ({ onChatSelect }) => {
       ) : (
         <List sx={{ flex: 1, overflow: 'auto', py: 0 }}>
           {filteredRooms.map((room, index) => {
-            const contactName = getContactName(room);
+            const receiverName = getReceiverName(room);
             const contactAvatar = getContactAvatar(room);
             const lastMessageTime = getLastMessageTime();
             const lastMessagePreview = getLastMessagePreview();
             const otherUserStatus = getOtherUserStatus(room);
             const isOnline = isUserOnline(room);
+            const unreadCount = room.unreadCount || 0;
 
             return (
               <ListItem
@@ -280,7 +305,7 @@ const AriztaChatList: React.FC<AriztaChatListProps> = ({ onChatSelect }) => {
                           {room.type === 'group' ? (
                             <GroupIcon />
                           ) : (
-                            contactName.charAt(0).toUpperCase()
+                            receiverName.charAt(0).toUpperCase()
                           )}
                         </Avatar>
                       </Badge>
@@ -297,7 +322,7 @@ const AriztaChatList: React.FC<AriztaChatListProps> = ({ onChatSelect }) => {
                               color: 'text.primary',
                             }}
                           >
-                            {contactName}
+                            {receiverName}
                           </Typography>
                           {room.type === 'group' && (
                             <GroupIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
@@ -347,17 +372,20 @@ const AriztaChatList: React.FC<AriztaChatListProps> = ({ onChatSelect }) => {
                       </Typography>
                       
                       {/* Unread messages badge */}
-                      <Badge
-                        badgeContent={Math.floor(Math.random() * 5) + 1}
-                        color="primary"
-                        sx={{
-                          '& .MuiBadge-badge': {
-                            fontSize: '0.75rem',
-                            height: 20,
-                            minWidth: 20,
-                          },
-                        }}
-                      />
+                      {unreadCount > 0 && (
+                        <Badge
+                          badgeContent={unreadCount}
+                          color="primary"
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              fontSize: '0.75rem',
+                              height: 20,
+                              minWidth: 20,
+                              fontWeight: 600,
+                            },
+                          }}
+                        />
+                      )}
                       
                       {/* Pinned indicator */}
                       {index === 0 && (
