@@ -151,6 +151,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Trust proxy for production deployments (Render, Heroku, etc.)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1); // Trust first proxy
+}
+
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
 
