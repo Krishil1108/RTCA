@@ -77,10 +77,10 @@ const socketHandler = (io) => {
     // Handle sending a message
     socket.on('send_message', async (data) => {
       try {
-        const { roomId, content, messageType = 'text', replyTo } = data;
+        const { roomId, content, messageType = 'text', replyTo, fileData } = data;
 
         // Validate input
-        if (!roomId || !content || content.trim().length === 0) {
+        if (!roomId || (!content && !fileData) || (content && content.trim().length === 0 && !fileData)) {
           socket.emit('error', { message: 'Invalid message data' });
           return;
         }
@@ -93,13 +93,20 @@ const socketHandler = (io) => {
         }
 
         // Create and save message
-        const message = new Message({
+        const messageData = {
           sender: socket.userId,
-          content: content.trim(),
+          content: content ? content.trim() : (fileData ? fileData.originalName : ''),
           room: roomId,
           messageType,
           replyTo: replyTo || undefined
-        });
+        };
+
+        // Add file data if present
+        if (fileData) {
+          messageData.fileData = fileData;
+        }
+
+        const message = new Message(messageData);
 
         await message.save();
         await message.populate('sender', 'name email avatar');
@@ -120,6 +127,7 @@ const socketHandler = (io) => {
             content: message.content,
             room: message.room,
             messageType: message.messageType,
+            fileData: message.fileData,
             createdAt: message.createdAt,
             replyTo: message.replyTo,
             reactions: message.reactions

@@ -171,4 +171,38 @@ api.interceptors.response.use(
   }
 );
 
+// File upload helper methods
+export const fileApi = {
+  uploadFile: async (file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await api.post('/files/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  uploadMultipleFiles: async (files: File[]): Promise<any> => {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+    
+    const response = await api.post('/files/upload-multiple', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  deleteFile: async (publicId: string): Promise<any> => {
+    const response = await api.delete(`/files/delete/${publicId}`);
+    return response.data;
+  }
+};
+
 export default api;

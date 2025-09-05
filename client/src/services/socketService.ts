@@ -132,13 +132,14 @@ class SocketService {
   }
 
   // Message handling
-  sendMessage(roomId: string, content: string, messageType = 'text', replyTo?: string): void {
+  sendMessage(roomId: string, content: string, messageType = 'text', replyTo?: string, fileData?: any): void {
     if (this.socket) {
       this.socket.emit(SOCKET_EVENTS.SEND_MESSAGE, {
         roomId,
         content,
         messageType,
         replyTo,
+        fileData,
       });
     }
   }

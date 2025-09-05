@@ -139,7 +139,7 @@ interface ChatContextType extends ChatState {
   disconnectSocket: () => void;
   loadRooms: () => Promise<void>;
   loadMessages: (roomId: string) => Promise<void>;
-  sendMessage: (content: string, messageType?: string, replyTo?: string) => void;
+  sendMessage: (content: string, messageType?: string, replyTo?: string, fileData?: any) => void;
   editMessage: (messageId: string, content: string) => void;
   deleteMessage: (messageId: string) => void;
   clearMessages: (roomId: string) => Promise<void>;
@@ -301,9 +301,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   };
 
   // Send message
-  const sendMessage = (content: string, messageType = 'text', replyTo?: string) => {
-    if (state.currentRoom && content.trim()) {
-      socketService.sendMessage(state.currentRoom, content.trim(), messageType, replyTo);
+  const sendMessage = (content: string, messageType = 'text', replyTo?: string, fileData?: any) => {
+    if (state.currentRoom && (content.trim() || fileData)) {
+      socketService.sendMessage(state.currentRoom, content.trim(), messageType, replyTo, fileData);
     }
   };
 

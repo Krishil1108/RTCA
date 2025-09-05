@@ -10,7 +10,16 @@ export interface Message {
   };
   content: string;
   room: string;
-  messageType: 'text' | 'image' | 'file' | 'system' | 'deleted';
+  messageType: 'text' | 'image' | 'video' | 'audio' | 'file' | 'system' | 'deleted';
+  fileData?: {
+    filename: string;
+    originalName: string;
+    mimetype: string;
+    size: number;
+    url: string;
+    publicId?: string;
+    thumbnail?: string;
+  };
   createdAt: string;
   edited?: boolean;
   editedAt?: string;

@@ -12,6 +12,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
 const userRoutes = require('./routes/users');
+const fileRoutes = require('./routes/files');
 
 // Import middleware
 const { authenticateToken } = require('./middleware/auth');
@@ -186,6 +187,12 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', authenticateToken, chatRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
+app.use('/api/files', authenticateToken, fileRoutes);
+
+// Serve uploaded files in development
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/uploads', express.static('uploads'));
+}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

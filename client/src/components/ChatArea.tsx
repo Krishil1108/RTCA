@@ -10,6 +10,8 @@ import {
   useMediaQuery,
   alpha,
   Zoom,
+  Chip,
+  Stack,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -21,14 +23,19 @@ import {
   Phone as PhoneIcon,
   VideoCall as VideoCallIcon,
   Group as GroupIcon,
+  Stop as StopIcon,
+  Close as CloseIcon,
+  PlayArrow as PlayIcon,
 } from '@mui/icons-material';
 import { useChat } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAriztaTheme } from '../contexts/ThemeContext';
 import { Message } from '../services/chatService';
+import { fileApi } from '../services/api';
 import MessageComponent from './MessageComponent';
 import TypingIndicator from './TypingIndicator';
 import WelcomeMessage from './WelcomeMessage';
+import FilePreviewDialog from './FilePreviewDialog';
 import { UI_CONSTANTS } from '../config/constants';
 
 interface ChatAreaProps {
@@ -55,9 +62,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [showFilePreview, setShowFilePreview] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Format last seen time
   const formatLastSeen = (lastSeen: string | Date | undefined) => {
@@ -103,14 +116,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [roomMessages]);
 
-  const handleMessageSubmit = (e: React.FormEvent) => {
+  const handleMessageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (messageInput.trim() && currentRoom) {
+      // Send text message
       sendMessage(messageInput.trim(), 'text', replyingTo?._id);
+      
+      // Reset form
       setMessageInput('');
       setReplyingTo(null);
-      setAttachedFiles([]);
     }
   };
 
@@ -142,17 +157,161 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setAttachedFiles(prev => [...prev, ...files]);
+    if (files.length > 0) {
+      setAttachedFiles(prev => [...prev, ...files]);
+      setShowFilePreview(true);
+    }
+    // Reset the input value so the same file can be selected again
+    e.target.value = '';
   };
 
-  // Cleanup typing timeout
+  // Voice recording functionality
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
+      
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      const audioChunks: BlobPart[] = [];
+      
+      recorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+      
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, {
+          type: 'audio/webm'
+        });
+        
+        // Auto-upload and send voice message
+        try {
+          setIsUploading(true);
+          const uploadResponse = await fileApi.uploadFile(audioFile);
+          
+          if (uploadResponse.success) {
+            sendMessage('', 'audio', replyingTo?._id, uploadResponse.file);
+            setReplyingTo(null);
+          }
+        } catch (error) {
+          console.error('Voice message upload failed:', error);
+          alert('Failed to send voice message. Please try again.');
+        } finally {
+          setIsUploading(false);
+        }
+        
+        // Stop all tracks to free up the microphone
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      // Start recording timer
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      alert('Could not access microphone. Please check your permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    }
+    setIsRecording(false);
+    setRecordingTime(0);
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+  };
+
+  const handleMicClick = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  // Format recording time
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Remove attached file
+  const removeAttachedFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle file preview dialog send
+  const handleFilePreviewSend = async (files: File[], message?: string) => {
+    if (!currentRoom) return;
+    
+    setIsUploading(true);
+    setShowFilePreview(false);
+    
+    try {
+      // Upload files and send messages
+      for (const file of files) {
+        const uploadResponse = await fileApi.uploadFile(file);
+        
+        if (uploadResponse.success) {
+          const fileData = uploadResponse.file;
+          
+          // Determine message type based on file type
+          let messageType = 'file';
+          if (file.type.startsWith('image/')) messageType = 'image';
+          else if (file.type.startsWith('video/')) messageType = 'video';
+          else if (file.type.startsWith('audio/')) messageType = 'audio';
+          
+          // Send the file message
+          sendMessage(message || '', messageType, replyingTo?._id, fileData);
+        }
+      }
+      
+      // Reset state
+      setAttachedFiles([]);
+      setReplyingTo(null);
+      
+    } catch (error) {
+      console.error('File upload failed:', error);
+      alert('Failed to upload files. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Cleanup typing timeout and recording
   useEffect(() => {
     return () => {
       if (typingTimeout) {
         clearTimeout(typingTimeout);
       }
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
     };
-  }, [typingTimeout]);
+  }, [typingTimeout, mediaRecorder]);
 
   if (!currentRoom) {
     return (
@@ -520,6 +679,77 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           </Box>
         )}
 
+        {/* Recording Indicator */}
+        {isRecording && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              p: 2,
+              mb: 1,
+              bgcolor: alpha(theme.palette.error.main, 0.1),
+              borderRadius: 2,
+              border: `2px solid ${theme.palette.error.main}`,
+            }}
+          >
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                bgcolor: theme.palette.error.main,
+                animation: 'pulse 1.5s infinite',
+                '@keyframes pulse': {
+                  '0%': { opacity: 1 },
+                  '50%': { opacity: 0.5 },
+                  '100%': { opacity: 1 },
+                },
+              }}
+            />
+            <Typography variant="body2" color="error" sx={{ fontWeight: 600 }}>
+              Recording... {formatRecordingTime(recordingTime)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Tap mic to stop
+            </Typography>
+          </Box>
+        )}
+
+        {/* Upload Indicator */}
+        {isUploading && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              p: 2,
+              mb: 1,
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              borderRadius: 2,
+              border: `2px solid ${theme.palette.primary.main}`,
+            }}
+          >
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                bgcolor: theme.palette.primary.main,
+                animation: 'pulse 1.5s infinite',
+                '@keyframes pulse': {
+                  '0%': { opacity: 1 },
+                  '50%': { opacity: 0.5 },
+                  '100%': { opacity: 1 },
+                },
+              }}
+            />
+            <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
+              Uploading files...
+            </Typography>
+          </Box>
+        )}
+
         {/* Input Form */}
         <Box 
           component="form" 
@@ -604,23 +834,37 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
 
           {/* Voice Button - Always visible */}
           <IconButton
+            onClick={handleMicClick}
             sx={{ 
-              color: isDarkMode ? '#8696a0' : '#54656f',
+              color: isRecording 
+                ? theme.palette.error.main 
+                : (isDarkMode ? '#8696a0' : '#54656f'),
               mb: 0.5,
+              bgcolor: isRecording 
+                ? alpha(theme.palette.error.main, 0.1)
+                : 'transparent',
+              border: isRecording 
+                ? `2px solid ${theme.palette.error.main}`
+                : 'none',
               '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                color: theme.palette.primary.main,
+                bgcolor: isRecording 
+                  ? alpha(theme.palette.error.main, 0.2)
+                  : alpha(theme.palette.primary.main, 0.1),
+                color: isRecording 
+                  ? theme.palette.error.dark
+                  : theme.palette.primary.main,
               },
             }}
           >
-            <MicIcon fontSize="small" />
+            {isRecording ? <StopIcon fontSize="small" /> : <MicIcon fontSize="small" />}
           </IconButton>
 
           {/* Send Button - Only visible when there's content */}
-          {messageInput.trim() || attachedFiles.length > 0 ? (
+          {messageInput.trim() ? (
             <Zoom in timeout={200}>
               <IconButton
                 type="submit"
+                disabled={isUploading}
                 sx={{
                   bgcolor: theme.palette.primary.main,
                   color: 'white',
@@ -630,6 +874,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
                   '&:hover': {
                     bgcolor: theme.palette.primary.dark,
                     transform: 'scale(1.1)',
+                  },
+                  '&:disabled': {
+                    bgcolor: theme.palette.action.disabled,
                   },
                 }}
               >
@@ -665,6 +912,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
           style={{ display: 'none' }}
         />
       </Paper>
+
+      {/* File Preview Dialog */}
+      <FilePreviewDialog
+        open={showFilePreview}
+        files={attachedFiles}
+        onClose={() => {
+          setShowFilePreview(false);
+          setAttachedFiles([]);
+        }}
+        onSend={handleFilePreviewSend}
+        onRemoveFile={removeAttachedFile}
+      />
     </Box>
   );
 };

@@ -6,8 +6,19 @@ import {
   Paper,
   Chip,
   alpha,
+  IconButton,
+  useTheme,
 } from '@mui/material';
-import { Reply as ReplyIcon } from '@mui/icons-material';
+import { 
+  Reply as ReplyIcon,
+  PlayArrow as PlayIcon,
+  Pause as PauseIcon,
+  Download as DownloadIcon,
+  Image as ImageIcon,
+  VideoFile as VideoIcon,
+  AudioFile as AudioIcon,
+  AttachFile as FileIcon,
+} from '@mui/icons-material';
 import { useAriztaTheme } from '../contexts/ThemeContext';
 import { Message } from '../services/chatService';
 
@@ -32,8 +43,40 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
   const [swipeProgress, setSwipeProgress] = useState(0);
+  const [audioPlaying, setAudioPlaying] = useState(false);
   
   const { isDarkMode } = useAriztaTheme();
+  const theme = useTheme();
+
+  // Helper functions
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleAudioToggle = () => {
+    const audio = document.getElementById(`audio-${message._id}`) as HTMLAudioElement;
+    if (audio) {
+      if (audioPlaying) {
+        audio.pause();
+      } else {
+        audio.play();
+      }
+      setAudioPlaying(!audioPlaying);
+    }
+  };
+
+  const handleDownload = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Swipe to reply functionality
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -229,17 +272,143 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
               </Box>
             )}
 
-            <Typography
-              variant="body1"
-              sx={{
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.87)',
-                lineHeight: 1.4,
-                fontSize: { xs: '0.9rem', sm: '1rem' },
-                fontFamily: '"Kohinoor Devanagari", "Noto Sans Devanagari", "Devanagari Sangam MN", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-              }}
-            >
-              {message.content}
-            </Typography>
+            {/* File Content */}
+            {message.fileData && (
+              <Box sx={{ mb: 1 }}>
+                {/* Image */}
+                {message.messageType === 'image' && (
+                  <Box
+                    component="img"
+                    src={message.fileData.url}
+                    alt={message.fileData.originalName}
+                    sx={{
+                      maxWidth: '100%',
+                      maxHeight: 300,
+                      borderRadius: 2,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        opacity: 0.9,
+                      },
+                    }}
+                    onClick={() => window.open(message.fileData!.url, '_blank')}
+                  />
+                )}
+
+                {/* Video */}
+                {message.messageType === 'video' && (
+                  <Box
+                    component="video"
+                    src={message.fileData.url}
+                    controls
+                    sx={{
+                      maxWidth: '100%',
+                      maxHeight: 300,
+                      borderRadius: 2,
+                    }}
+                  />
+                )}
+
+                {/* Audio */}
+                {message.messageType === 'audio' && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      p: 2,
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      borderRadius: 2,
+                    }}
+                  >
+                    <IconButton
+                      onClick={handleAudioToggle}
+                      sx={{
+                        bgcolor: theme.palette.primary.main,
+                        color: 'white',
+                        '&:hover': { bgcolor: theme.palette.primary.dark },
+                      }}
+                    >
+                      {audioPlaying ? <PauseIcon /> : <PlayIcon />}
+                    </IconButton>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" fontWeight={600}>
+                        {message.fileData.originalName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatFileSize(message.fileData.size)}
+                      </Typography>
+                    </Box>
+                    <IconButton
+                      onClick={() => handleDownload(message.fileData!.url, message.fileData!.originalName)}
+                      size="small"
+                    >
+                      <DownloadIcon />
+                    </IconButton>
+                    <audio
+                      id={`audio-${message._id}`}
+                      src={message.fileData.url}
+                      onEnded={() => setAudioPlaying(false)}
+                      style={{ display: 'none' }}
+                    />
+                  </Box>
+                )}
+
+                {/* File */}
+                {message.messageType === 'file' && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      p: 2,
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderRadius: 2,
+                      bgcolor: alpha(theme.palette.background.paper, 0.5),
+                    }}
+                  >
+                    <FileIcon sx={{ color: theme.palette.primary.main }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {message.fileData.originalName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatFileSize(message.fileData.size)}
+                      </Typography>
+                    </Box>
+                    <IconButton
+                      onClick={() => handleDownload(message.fileData!.url, message.fileData!.originalName)}
+                      size="small"
+                      sx={{ color: theme.palette.primary.main }}
+                    >
+                      <DownloadIcon />
+                    </IconButton>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {/* Text Content */}
+            {message.content && (
+              <Typography
+                variant="body1"
+                sx={{
+                  color: isDarkMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.87)',
+                  lineHeight: 1.4,
+                  fontSize: { xs: '0.9rem', sm: '1rem' },
+                  fontFamily: '"Kohinoor Devanagari", "Noto Sans Devanagari", "Devanagari Sangam MN", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+                }}
+              >
+                {message.content}
+              </Typography>
+            )}
 
             {message.edited && (
               <Chip
