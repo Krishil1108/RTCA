@@ -4,6 +4,7 @@ import { TypingData } from '../services/socketService';
 import socketService from '../services/socketService';
 import chatService from '../services/chatService';
 import api from '../services/api';
+import { useAuth } from './AuthContext';
 
 interface ChatState {
   rooms: Room[];
@@ -168,6 +169,7 @@ interface ChatProviderProps {
 
 export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
+  const { user } = useAuth();
 
   // Set up socket event listeners
   const setupSocketListeners = useCallback(() => {
@@ -250,6 +252,53 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       const { roomId } = data;
       dispatch({ type: 'CLEAR_MESSAGES', payload: roomId });
     });
+
+    // Read receipt events
+    socketService.onMessageDelivered((data) => {
+      const { messageId, userId, deliveredAt } = data;
+      // Update message with delivery status
+      for (const roomId in state.messages) {
+        const message = state.messages[roomId].find(m => m._id === messageId);
+        if (message) {
+          const updatedMessage = {
+            ...message,
+            deliveredTo: [...(message.deliveredTo || []), { 
+              user: userId, 
+              deliveredAt: deliveredAt.toString() 
+            }],
+            readReceiptStatus: 'delivered' as const
+          };
+          dispatch({
+            type: 'UPDATE_MESSAGE',
+            payload: { roomId, message: updatedMessage },
+          });
+          break;
+        }
+      }
+    });
+
+    socketService.onMessageRead((data) => {
+      const { messageId, userId, readAt } = data;
+      // Update message with read status
+      for (const roomId in state.messages) {
+        const message = state.messages[roomId].find(m => m._id === messageId);
+        if (message) {
+          const updatedMessage = {
+            ...message,
+            readBy: [...(message.readBy || []), { 
+              user: userId, 
+              readAt: readAt.toString() 
+            }],
+            readReceiptStatus: 'read' as const
+          };
+          dispatch({
+            type: 'UPDATE_MESSAGE',
+            payload: { roomId, message: updatedMessage },
+          });
+          break;
+        }
+      }
+    });
   }, [state.typingUsers, state.currentRoom, state.messages]);
 
   // Initialize socket connection
@@ -312,6 +361,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     socketService.joinRoom(roomId);
     setCurrentRoom(roomId);
     loadMessages(roomId);
+    
+    // Mark all messages in this room as delivered (after a short delay to ensure messages are loaded)
+    setTimeout(() => {
+      const roomMessages = state.messages[roomId] || [];
+      roomMessages.forEach(message => {
+        // Only mark other users' messages as delivered
+        if (message.sender._id !== user?.id) {
+          socketService.markMessageAsDelivered(message._id);
+        }
+      });
+    }, 500);
   };
 
   // Leave room
