@@ -47,6 +47,12 @@ export const SOCKET_EVENTS = {
   USER_ONLINE: 'user_online',
   USER_OFFLINE: 'user_offline',
   
+  // Read Receipts
+  MARK_DELIVERED: 'mark_delivered',
+  MARK_READ: 'mark_read',
+  MESSAGE_DELIVERED: 'message_delivered',
+  MESSAGE_READ: 'message_read',
+  
   // Errors
   ERROR: 'error',
 } as const;

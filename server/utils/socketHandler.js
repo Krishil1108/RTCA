@@ -130,7 +130,10 @@ const socketHandler = (io) => {
             fileData: message.fileData,
             createdAt: message.createdAt,
             replyTo: message.replyTo,
-            reactions: message.reactions
+            reactions: message.reactions,
+            deliveredTo: message.deliveredTo,
+            readBy: message.readBy,
+            readReceiptStatus: message.readReceiptStatus
           }
         });
 
@@ -323,6 +326,70 @@ const socketHandler = (io) => {
       } catch (error) {
         console.error('Delete message error:', error);
         socket.emit('error', { message: 'Failed to delete message' });
+      }
+    });
+
+    // Handle marking message as delivered
+    socket.on('mark_delivered', async (data) => {
+      try {
+        const { messageId } = data;
+
+        const message = await Message.findById(messageId);
+        if (!message) {
+          socket.emit('error', { message: 'Message not found' });
+          return;
+        }
+
+        // Don't mark own messages as delivered
+        if (message.sender.toString() === socket.userId.toString()) {
+          return;
+        }
+
+        await message.markAsDelivered(socket.userId);
+        
+        // Notify the sender about delivery
+        socket.to(message.room.toString()).emit('message_delivered', {
+          messageId,
+          userId: socket.userId,
+          deliveredAt: new Date()
+        });
+
+        console.log(`Message ${messageId} marked as delivered by ${socket.user.name}`);
+      } catch (error) {
+        console.error('Mark delivered error:', error);
+      }
+    });
+
+    // Handle marking message as read
+    socket.on('mark_read', async (data) => {
+      try {
+        const { messageId } = data;
+
+        const message = await Message.findById(messageId);
+        if (!message) {
+          socket.emit('error', { message: 'Message not found' });
+          return;
+        }
+
+        // Don't mark own messages as read
+        if (message.sender.toString() === socket.userId.toString()) {
+          return;
+        }
+
+        // Mark as delivered first, then read
+        await message.markAsDelivered(socket.userId);
+        await message.markAsRead(socket.userId);
+        
+        // Notify the sender about read status
+        socket.to(message.room.toString()).emit('message_read', {
+          messageId,
+          userId: socket.userId,
+          readAt: new Date()
+        });
+
+        console.log(`Message ${messageId} marked as read by ${socket.user.name}`);
+      } catch (error) {
+        console.error('Mark read error:', error);
       }
     });
 

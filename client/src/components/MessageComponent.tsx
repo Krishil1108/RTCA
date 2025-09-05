@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Avatar,
@@ -18,7 +18,9 @@ import {
 } from '@mui/icons-material';
 import { useAriztaTheme } from '../contexts/ThemeContext';
 import { Message } from '../services/chatService';
+import socketService from '../services/socketService';
 import BlurredImagePreview from './BlurredImagePreview';
+import ReadReceipt from './ReadReceipt';
 
 interface MessageComponentProps {
   message: Message;
@@ -42,9 +44,65 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
   const [swipeProgress, setSwipeProgress] = useState(0);
   const [audioPlaying, setAudioPlaying] = useState(false);
+  const [hasBeenRead, setHasBeenRead] = useState(false);
+  
+  // Ref for intersection observer
+  const messageRef = useRef<HTMLDivElement>(null);
   
   const { isDarkMode } = useAriztaTheme();
   const theme = useTheme();
+
+  // Check if message is from current user
+  const isOwnMessage = message.sender._id === currentUserId;
+  
+  // Mark message as read when it comes into view (only for other users' messages)
+  useEffect(() => {
+    if (isOwnMessage || hasBeenRead) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            // Message is visible, mark as read
+            socketService.markMessageAsRead(message._id);
+            setHasBeenRead(true);
+          }
+        });
+      },
+      {
+        threshold: 0.5, // Trigger when 50% of message is visible
+        rootMargin: '0px'
+      }
+    );
+
+    if (messageRef.current) {
+      observer.observe(messageRef.current);
+    }
+
+    return () => {
+      if (messageRef.current) {
+        observer.unobserve(messageRef.current);
+      }
+    };
+  }, [message._id, isOwnMessage, hasBeenRead]);
+
+  // Calculate read receipt status
+  const getReadReceiptStatus = (): 'sent' | 'delivered' | 'read' => {
+    if (!isOwnMessage) return 'sent'; // Don't show read receipts for others' messages
+    
+    if (message.readReceiptStatus) {
+      return message.readReceiptStatus;
+    }
+    
+    // Fallback calculation
+    if (message.readBy && message.readBy.length > 0) {
+      return 'read';
+    } else if (message.deliveredTo && message.deliveredTo.length > 0) {
+      return 'delivered';
+    } else {
+      return 'sent';
+    }
+  };
 
   // Helper functions
   const formatFileSize = (bytes: number) => {
@@ -117,10 +175,9 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
     setTouchEnd(null);
   };
 
-  const isOwnMessage = currentUserId && message.sender._id === currentUserId;
-
   return (
     <Box
+      ref={messageRef}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -422,6 +479,7 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
               gap: 1,
               mt: 0.5,
               px: 1,
+              justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
             }}
           >
             <Typography
@@ -436,6 +494,14 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
                 minute: '2-digit' 
               })}
             </Typography>
+            
+            {/* Show read receipt only for own messages */}
+            {isOwnMessage && (
+              <ReadReceipt 
+                status={getReadReceiptStatus()} 
+                size="small"
+              />
+            )}
           </Box>
         </Box>
       </Box>

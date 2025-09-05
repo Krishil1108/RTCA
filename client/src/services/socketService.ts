@@ -231,6 +231,31 @@ class SocketService {
     }
   }
 
+  // Read Receipt Methods
+  markMessageAsDelivered(messageId: string): void {
+    if (this.socket) {
+      this.socket.emit(SOCKET_EVENTS.MARK_DELIVERED, { messageId });
+    }
+  }
+
+  markMessageAsRead(messageId: string): void {
+    if (this.socket) {
+      this.socket.emit(SOCKET_EVENTS.MARK_READ, { messageId });
+    }
+  }
+
+  onMessageDelivered(callback: (data: { messageId: string; userId: string; deliveredAt: Date }) => void): void {
+    if (this.socket) {
+      this.socket.on(SOCKET_EVENTS.MESSAGE_DELIVERED, callback);
+    }
+  }
+
+  onMessageRead(callback: (data: { messageId: string; userId: string; readAt: Date }) => void): void {
+    if (this.socket) {
+      this.socket.on(SOCKET_EVENTS.MESSAGE_READ, callback);
+    }
+  }
+
   // Event cleanup
   off(event: string, callback?: (...args: any[]) => void): void {
     if (this.socket) {

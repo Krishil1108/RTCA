@@ -39,6 +39,16 @@ export interface Message {
       name: string;
     };
   };
+  // Read receipt fields
+  deliveredTo?: Array<{
+    user: string;
+    deliveredAt: string;
+  }>;
+  readBy?: Array<{
+    user: string;
+    readAt: string;
+  }>;
+  readReceiptStatus?: 'sent' | 'delivered' | 'read';
 }
 
 export interface Room {

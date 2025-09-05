@@ -416,4 +416,100 @@ router.delete('/rooms/:roomId/messages', async (req, res) => {
   }
 });
 
+// @route   POST /api/chat/messages/:messageId/delivered
+// @desc    Mark message as delivered
+// @access  Private
+router.post('/messages/:messageId/delivered', async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Don't mark own messages as delivered
+    if (message.sender.toString() === userId.toString()) {
+      return res.status(400).json({ message: 'Cannot mark own message as delivered' });
+    }
+
+    await message.markAsDelivered(userId);
+    
+    res.json({ 
+      message: 'Message marked as delivered',
+      status: 'delivered'
+    });
+  } catch (error) {
+    console.error('Mark delivered error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/chat/messages/:messageId/read
+// @desc    Mark message as read
+// @access  Private
+router.post('/messages/:messageId/read', async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Don't mark own messages as read
+    if (message.sender.toString() === userId.toString()) {
+      return res.status(400).json({ message: 'Cannot mark own message as read' });
+    }
+
+    // Mark as delivered first (if not already)
+    await message.markAsDelivered(userId);
+    // Then mark as read
+    await message.markAsRead(userId);
+    
+    res.json({ 
+      message: 'Message marked as read',
+      status: 'read'
+    });
+  } catch (error) {
+    console.error('Mark read error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/chat/rooms/:roomId/mark-read
+// @desc    Mark all messages in a room as read
+// @access  Private
+router.post('/rooms/:roomId/mark-read', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user._id;
+
+    // Find all unread messages in the room (not sent by current user)
+    const messages = await Message.find({
+      room: roomId,
+      sender: { $ne: userId },
+      'readBy.user': { $ne: userId }
+    });
+
+    // Mark all as delivered and read
+    const updatePromises = messages.map(async (message) => {
+      await message.markAsDelivered(userId);
+      await message.markAsRead(userId);
+    });
+
+    await Promise.all(updatePromises);
+    
+    res.json({ 
+      message: `${messages.length} messages marked as read`,
+      count: messages.length
+    });
+  } catch (error) {
+    console.error('Mark room read error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

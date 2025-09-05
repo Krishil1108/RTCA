@@ -226,4 +226,22 @@ export const fileApi = {
   }
 };
 
+// Read receipt API methods
+export const readReceiptApi = {
+  markMessageAsDelivered: async (messageId: string): Promise<any> => {
+    const response = await api.post(`/chat/messages/${messageId}/delivered`);
+    return response.data;
+  },
+
+  markMessageAsRead: async (messageId: string): Promise<any> => {
+    const response = await api.post(`/chat/messages/${messageId}/read`);
+    return response.data;
+  },
+
+  markRoomAsRead: async (roomId: string): Promise<any> => {
+    const response = await api.post(`/chat/rooms/${roomId}/mark-read`);
+    return response.data;
+  }
+};
+
 export default api;

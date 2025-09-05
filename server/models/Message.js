@@ -57,7 +57,28 @@ const messageSchema = new mongoose.Schema({
   replyTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Message'
-  }
+  },
+  // Read receipts tracking
+  deliveredTo: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    deliveredAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  readBy: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    readAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });
@@ -83,6 +104,46 @@ messageSchema.methods.addReaction = function(userId, emoji) {
   this.reactions.push({ user: userId, emoji });
   return this.save();
 };
+
+// Method to mark as delivered
+messageSchema.methods.markAsDelivered = function(userId) {
+  // Check if already marked as delivered for this user
+  const alreadyDelivered = this.deliveredTo.some(delivery => 
+    delivery.user.equals(userId)
+  );
+  
+  if (!alreadyDelivered) {
+    this.deliveredTo.push({ user: userId });
+  }
+  return this.save();
+};
+
+// Method to mark as read
+messageSchema.methods.markAsRead = function(userId) {
+  // Check if already marked as read for this user
+  const alreadyRead = this.readBy.some(read => 
+    read.user.equals(userId)
+  );
+  
+  if (!alreadyRead) {
+    this.readBy.push({ user: userId });
+  }
+  return this.save();
+};
+
+// Virtual to get read receipt status for sender
+messageSchema.virtual('readReceiptStatus').get(function() {
+  const deliveredCount = this.deliveredTo.length;
+  const readCount = this.readBy.length;
+  
+  if (readCount > 0) {
+    return 'read'; // Double blue tick
+  } else if (deliveredCount > 0) {
+    return 'delivered'; // Double black tick
+  } else {
+    return 'sent'; // Single tick
+  }
+});
 
 // Method to remove reaction
 messageSchema.methods.removeReaction = function(userId) {
