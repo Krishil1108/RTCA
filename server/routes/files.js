@@ -9,15 +9,22 @@ const fs = require('fs');
 const router = express.Router();
 
 // Configure Cloudinary (you can also use local storage)
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
-  api_key: process.env.CLOUDINARY_API_KEY || 'demo',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'demo'
-});
+const cloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && 
+                            process.env.CLOUDINARY_API_KEY && 
+                            process.env.CLOUDINARY_API_SECRET &&
+                            process.env.CLOUDINARY_CLOUD_NAME !== 'your-cloudinary-cloud-name';
+
+if (cloudinaryConfigured) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+}
 
 // Configure storage
-const storage = process.env.NODE_ENV === 'production' ? 
-  // Cloudinary storage for production
+const storage = (process.env.NODE_ENV === 'production' && cloudinaryConfigured) ? 
+  // Cloudinary storage for production (when configured)
   new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
@@ -26,20 +33,8 @@ const storage = process.env.NODE_ENV === 'production' ?
       resource_type: 'auto'
     }
   }) :
-  // Local storage for development
-  multer.diskStorage({
-    destination: function (req, file, cb) {
-      const uploadDir = path.join(__dirname, '../uploads');
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-  });
+  // Memory storage for development or when Cloudinary is not configured
+  multer.memoryStorage();
 
 // Configure multer
 const upload = multer({
@@ -72,16 +67,36 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const fileData = {
-      filename: req.file.filename || req.file.original_filename,
-      originalName: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      url: process.env.NODE_ENV === 'production' ? req.file.path : `/uploads/${req.file.filename}`,
-      publicId: req.file.public_id || null,
-      uploadedAt: new Date(),
-      uploadedBy: req.user.id
-    };
+    let fileData;
+
+    if (process.env.NODE_ENV === 'production' && cloudinaryConfigured) {
+      // Cloudinary upload
+      fileData = {
+        filename: req.file.filename || req.file.original_filename,
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        url: req.file.path,
+        publicId: req.file.public_id || null,
+        uploadedAt: new Date(),
+        uploadedBy: req.user.id
+      };
+    } else {
+      // Memory storage - convert to base64 for temporary storage
+      const base64 = req.file.buffer.toString('base64');
+      const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
+      
+      fileData = {
+        filename: `${Date.now()}-${req.file.originalname}`,
+        originalName: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        url: dataUrl, // Base64 data URL for immediate display
+        publicId: null,
+        uploadedAt: new Date(),
+        uploadedBy: req.user.id
+      };
+    }
 
     res.json({
       success: true,
@@ -89,7 +104,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
     });
   } catch (error) {
     console.error('File upload error:', error);
-    res.status(500).json({ error: 'File upload failed' });
+    res.status(500).json({ error: 'File upload failed: ' + error.message });
   }
 });
 
@@ -100,16 +115,36 @@ router.post('/upload-multiple', authenticateToken, upload.array('files', 10), as
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    const filesData = req.files.map(file => ({
-      filename: file.filename || file.original_filename,
-      originalName: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      url: process.env.NODE_ENV === 'production' ? file.path : `/uploads/${file.filename}`,
-      publicId: file.public_id || null,
-      uploadedAt: new Date(),
-      uploadedBy: req.user.id
-    }));
+    const filesData = req.files.map(file => {
+      if (process.env.NODE_ENV === 'production' && cloudinaryConfigured) {
+        // Cloudinary upload
+        return {
+          filename: file.filename || file.original_filename,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          url: file.path,
+          publicId: file.public_id || null,
+          uploadedAt: new Date(),
+          uploadedBy: req.user.id
+        };
+      } else {
+        // Memory storage - convert to base64
+        const base64 = file.buffer.toString('base64');
+        const dataUrl = `data:${file.mimetype};base64,${base64}`;
+        
+        return {
+          filename: `${Date.now()}-${file.originalname}`,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          url: dataUrl,
+          publicId: null,
+          uploadedAt: new Date(),
+          uploadedBy: req.user.id
+        };
+      }
+    });
 
     res.json({
       success: true,
@@ -117,7 +152,7 @@ router.post('/upload-multiple', authenticateToken, upload.array('files', 10), as
     });
   } catch (error) {
     console.error('Multiple file upload error:', error);
-    res.status(500).json({ error: 'File upload failed' });
+    res.status(500).json({ error: 'File upload failed: ' + error.message });
   }
 });
 
