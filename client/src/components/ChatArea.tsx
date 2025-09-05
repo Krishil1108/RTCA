@@ -96,10 +96,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
   const room = rooms.find(r => r._id === currentRoom);
   const allRoomMessages = currentRoom ? messages[currentRoom] || [] : [];
   
-  // Deduplicate messages by ID to prevent duplicate keys
-  const roomMessages = allRoomMessages.filter((message, index, self) => 
-    index === self.findIndex(m => m._id === message._id)
-  );
+  // Deduplicate messages by ID and sort by timestamp (oldest first)
+  const roomMessages = allRoomMessages
+    .filter((message, index, self) => 
+      index === self.findIndex(m => m._id === message._id)
+    )
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   const roomTypingUsers = currentRoom ? typingUsers[currentRoom] || [] : [];
   
   // Get the other user in direct messages (not the current user)

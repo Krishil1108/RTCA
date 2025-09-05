@@ -213,9 +213,8 @@ export const fileApi = {
     return response.data;
   },
 
-  downloadFile: async (fileId: string, fileUrl: string): Promise<any> => {
+  downloadFile: async (fileId: string): Promise<any> => {
     const response = await api.get(`/files/download/${fileId}`, {
-      params: { url: fileUrl },
       timeout: 30000, // 30 seconds timeout for download
     });
     return response.data;

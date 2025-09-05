@@ -81,7 +81,7 @@ const BlurredImagePreview: React.FC<BlurredImagePreviewProps> = ({
     setError(null);
 
     try {
-      const response = await fileApi.downloadFile(messageId, fileData.url);
+      const response = await fileApi.downloadFile(messageId);
       
       if (response.success) {
         setFullImageUrl(response.downloadUrl);
@@ -91,11 +91,12 @@ const BlurredImagePreview: React.FC<BlurredImagePreviewProps> = ({
         localStorage.setItem(`downloaded_${messageId}`, 'true');
         localStorage.setItem(`image_${messageId}`, response.downloadUrl);
       } else {
-        setError('Failed to download image');
+        setError(response.error || 'Failed to download image');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Download failed:', error);
-      setError('Failed to download image');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to download image';
+      setError(errorMessage);
     } finally {
       setIsDownloading(false);
     }

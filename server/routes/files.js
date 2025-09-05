@@ -198,40 +198,57 @@ router.post('/upload-multiple', authenticateToken, upload.array('files', 10), as
 router.get('/download/:fileId', authenticateToken, async (req, res) => {
   try {
     const { fileId } = req.params;
+    const Message = require('../models/Message');
+    const Room = require('../models/Room');
     
-    // In a real application, you would:
-    // 1. Look up the file metadata from your database using fileId
-    // 2. Check if the user has permission to download this file
-    // 3. Return the full resolution image URL or stream the file
+    // Find the message containing this file
+    const message = await Message.findById(fileId).populate('sender', 'username email');
     
-    // For now, we'll return the file URL from the request
-    // This is a simplified implementation
-    const fileUrl = req.query.url;
-    
-    if (!fileUrl) {
-      return res.status(404).json({ error: 'File not found' });
-    }
-    
-    // If using Cloudinary in production
-    if (process.env.NODE_ENV === 'production' && cloudinaryConfigured) {
-      // Return the Cloudinary URL for download
-      res.json({
-        success: true,
-        downloadUrl: fileUrl,
-        message: 'File ready for download'
-      });
-    } else {
-      // For development with memory storage, return the base64 data URL
-      res.json({
-        success: true,
-        downloadUrl: fileUrl,
-        message: 'File ready for download'
+    if (!message || !message.fileData) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'File not found' 
       });
     }
+    
+    // Check if user has permission to access this file
+    // User can download if they are in the room where the message was sent
+    const room = await Room.findOne({ _id: message.room });
+    if (!room) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Room not found' 
+      });
+    }
+    
+    // Check if user is a member of the room
+    const isMember = room.members.some(member => 
+      member.user.toString() === req.user.id.toString()
+    );
+    
+    if (!isMember) {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Access denied. You are not a member of this conversation.' 
+      });
+    }
+    
+    // Return the file URL for download
+    res.json({
+      success: true,
+      downloadUrl: message.fileData.url,
+      filename: message.fileData.originalName,
+      mimetype: message.fileData.mimetype,
+      size: message.fileData.size,
+      message: 'File ready for download'
+    });
     
   } catch (error) {
     console.error('File download error:', error);
-    res.status(500).json({ error: 'File download failed: ' + error.message });
+    res.status(500).json({ 
+      success: false,
+      error: 'File download failed: ' + error.message 
+    });
   }
 });
 
