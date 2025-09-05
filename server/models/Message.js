@@ -30,7 +30,8 @@ const messageSchema = new mongoose.Schema({
     size: Number,
     url: String,
     publicId: String,
-    thumbnail: String // For video files
+    thumbnail: String, // For video files
+    blurredThumbnail: String // For privacy-protected image previews
   },
   edited: {
     type: Boolean,

@@ -19,6 +19,7 @@ export interface Message {
     url: string;
     publicId?: string;
     thumbnail?: string;
+    blurredThumbnail?: string;
   };
   createdAt: string;
   edited?: boolean;

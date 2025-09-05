@@ -5,8 +5,33 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { authenticateToken } = require('../middleware/auth');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 
 const router = express.Router();
+
+// Helper function to create blurred thumbnail
+const createBlurredThumbnail = async (buffer, mimetype) => {
+  try {
+    if (!mimetype.startsWith('image/')) {
+      return null;
+    }
+
+    const thumbnail = await sharp(buffer)
+      .resize(300, 300, { 
+        fit: 'inside',
+        withoutEnlargement: true 
+      })
+      .blur(10) // Apply heavy blur
+      .jpeg({ quality: 30 }) // Low quality for small size
+      .toBuffer();
+
+    const base64Thumbnail = thumbnail.toString('base64');
+    return `data:image/jpeg;base64,${base64Thumbnail}`;
+  } catch (error) {
+    console.error('Error creating blurred thumbnail:', error);
+    return null;
+  }
+};
 
 // Configure Cloudinary (you can also use local storage)
 const cloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && 
@@ -40,7 +65,7 @@ const storage = (process.env.NODE_ENV === 'production' && cloudinaryConfigured) 
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: 100 * 1024 * 1024, // Increased to 100MB limit for better large file support
   },
   fileFilter: function (req, file, cb) {
     // Allowed file types
@@ -68,6 +93,17 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
     }
 
     let fileData;
+    let blurredThumbnail = null;
+
+    // Create blurred thumbnail for images
+    if (req.file.mimetype.startsWith('image/')) {
+      const buffer = req.file.buffer || 
+        (req.file.path ? fs.readFileSync(req.file.path) : null);
+      
+      if (buffer) {
+        blurredThumbnail = await createBlurredThumbnail(buffer, req.file.mimetype);
+      }
+    }
 
     if (process.env.NODE_ENV === 'production' && cloudinaryConfigured) {
       // Cloudinary upload
@@ -78,6 +114,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
         size: req.file.size,
         url: req.file.path,
         publicId: req.file.public_id || null,
+        blurredThumbnail: blurredThumbnail,
         uploadedAt: new Date(),
         uploadedBy: req.user.id
       };
@@ -93,6 +130,7 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
         size: req.file.size,
         url: dataUrl, // Base64 data URL for immediate display
         publicId: null,
+        blurredThumbnail: blurredThumbnail,
         uploadedAt: new Date(),
         uploadedBy: req.user.id
       };
@@ -153,6 +191,47 @@ router.post('/upload-multiple', authenticateToken, upload.array('files', 10), as
   } catch (error) {
     console.error('Multiple file upload error:', error);
     res.status(500).json({ error: 'File upload failed: ' + error.message });
+  }
+});
+
+// Download full resolution image endpoint
+router.get('/download/:fileId', authenticateToken, async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    
+    // In a real application, you would:
+    // 1. Look up the file metadata from your database using fileId
+    // 2. Check if the user has permission to download this file
+    // 3. Return the full resolution image URL or stream the file
+    
+    // For now, we'll return the file URL from the request
+    // This is a simplified implementation
+    const fileUrl = req.query.url;
+    
+    if (!fileUrl) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    // If using Cloudinary in production
+    if (process.env.NODE_ENV === 'production' && cloudinaryConfigured) {
+      // Return the Cloudinary URL for download
+      res.json({
+        success: true,
+        downloadUrl: fileUrl,
+        message: 'File ready for download'
+      });
+    } else {
+      // For development with memory storage, return the base64 data URL
+      res.json({
+        success: true,
+        downloadUrl: fileUrl,
+        message: 'File ready for download'
+      });
+    }
+    
+  } catch (error) {
+    console.error('File download error:', error);
+    res.status(500).json({ error: 'File download failed: ' + error.message });
   }
 });
 

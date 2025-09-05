@@ -100,7 +100,7 @@ const retryRequest = async (
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // Increased timeout
+  timeout: 60000, // Increased timeout to 60 seconds for large file uploads
   headers: {
     'Content-Type': 'application/json',
   },
@@ -173,7 +173,7 @@ api.interceptors.response.use(
 
 // File upload helper methods
 export const fileApi = {
-  uploadFile: async (file: File): Promise<any> => {
+  uploadFile: async (file: File, onProgress?: (progress: number) => void): Promise<any> => {
     const formData = new FormData();
     formData.append('file', file);
     
@@ -181,11 +181,18 @@ export const fileApi = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 120000, // 2 minutes timeout for file uploads
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(progress);
+        }
+      },
     });
     return response.data;
   },
 
-  uploadMultipleFiles: async (files: File[]): Promise<any> => {
+  uploadMultipleFiles: async (files: File[], onProgress?: (progress: number) => void): Promise<any> => {
     const formData = new FormData();
     files.forEach(file => {
       formData.append('files', file);
@@ -195,6 +202,21 @@ export const fileApi = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 180000, // 3 minutes timeout for multiple file uploads
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(progress);
+        }
+      },
+    });
+    return response.data;
+  },
+
+  downloadFile: async (fileId: string, fileUrl: string): Promise<any> => {
+    const response = await api.get(`/files/download/${fileId}`, {
+      params: { url: fileUrl },
+      timeout: 30000, // 30 seconds timeout for download
     });
     return response.data;
   },

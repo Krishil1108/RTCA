@@ -14,13 +14,11 @@ import {
   PlayArrow as PlayIcon,
   Pause as PauseIcon,
   Download as DownloadIcon,
-  Image as ImageIcon,
-  VideoFile as VideoIcon,
-  AudioFile as AudioIcon,
   AttachFile as FileIcon,
 } from '@mui/icons-material';
 import { useAriztaTheme } from '../contexts/ThemeContext';
 import { Message } from '../services/chatService';
+import BlurredImagePreview from './BlurredImagePreview';
 
 interface MessageComponentProps {
   message: Message;
@@ -277,20 +275,11 @@ const MessageComponent: React.FC<MessageComponentProps> = ({
               <Box sx={{ mb: 1 }}>
                 {/* Image */}
                 {message.messageType === 'image' && (
-                  <Box
-                    component="img"
-                    src={message.fileData.url}
-                    alt={message.fileData.originalName}
-                    sx={{
-                      maxWidth: '100%',
-                      maxHeight: 300,
-                      borderRadius: 2,
-                      cursor: 'pointer',
-                      '&:hover': {
-                        opacity: 0.9,
-                      },
-                    }}
-                    onClick={() => window.open(message.fileData!.url, '_blank')}
+                  <BlurredImagePreview
+                    fileData={message.fileData}
+                    messageId={message._id}
+                    isOwnMessage={message.sender._id === currentUserId}
+                    style={{ cursor: 'pointer' }}
                   />
                 )}
 

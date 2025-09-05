@@ -9,6 +9,7 @@ import AriztaMainPage from './pages/AriztaMainPage';
 import AuthSuccessPage from './pages/AuthSuccessPage';
 import AuthErrorPage from './pages/AuthErrorPage';
 import LoadingSpinner from './components/LoadingSpinner';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import './App.css';
 
 // Protected Route Component
@@ -96,6 +97,9 @@ function App() {
             {/* Catch all - redirect to chat */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          
+          {/* PWA Install Prompt */}
+          <PWAInstallPrompt />
         </Router>
       </AuthProvider>
     </ThemeProvider>

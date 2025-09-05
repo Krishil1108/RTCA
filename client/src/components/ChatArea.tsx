@@ -67,6 +67,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -155,7 +156,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
     fileInputRef.current?.click();
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       setAttachedFiles(prev => [...prev, ...files]);
@@ -265,12 +266,22 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
     if (!currentRoom) return;
     
     setIsUploading(true);
+    setUploadProgress(0);
     setShowFilePreview(false);
     
     try {
-      // Upload files and send messages
-      for (const file of files) {
-        const uploadResponse = await fileApi.uploadFile(file);
+      // Upload files with progress tracking
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Upload with individual file progress
+        const uploadResponse = await fileApi.uploadFile(file, (fileProgress) => {
+          // Calculate overall progress
+          const baseProgress = (i / files.length) * 100;
+          const currentFileProgress = (fileProgress / files.length);
+          const totalProgress = baseProgress + currentFileProgress;
+          setUploadProgress(Math.min(totalProgress, 100));
+        });
         
         if (uploadResponse.success) {
           const fileData = uploadResponse.file;
@@ -290,11 +301,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onStartConversation, onBackClick })
       setAttachedFiles([]);
       setReplyingTo(null);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('File upload failed:', error);
-      alert('Failed to upload files. Please try again.');
+      const errorMessage = error.response?.data?.error || 'Failed to upload files. Please try again.';
+      alert(errorMessage);
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 

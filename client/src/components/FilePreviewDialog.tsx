@@ -14,6 +14,7 @@ import {
   IconButton,
   Stack,
   Chip,
+  LinearProgress,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -33,6 +34,8 @@ interface FilePreviewDialogProps {
   onClose: () => void;
   onSend: (files: File[], message?: string) => void;
   onRemoveFile: (index: number) => void;
+  isUploading?: boolean;
+  uploadProgress?: number;
 }
 
 const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
@@ -41,6 +44,8 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
   onClose,
   onSend,
   onRemoveFile,
+  isUploading = false,
+  uploadProgress = 0,
 }) => {
   const theme = useTheme();
   const [message, setMessage] = useState('');
@@ -110,9 +115,14 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
 
       <DialogContent>
         <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             Preview your files before sending:
           </Typography>
+          {files.some(f => f.size > 10 * 1024 * 1024) && (
+            <Typography variant="caption" color="warning.main" sx={{ mb: 2, display: 'block' }}>
+              💡 Large files detected. Original quality will be preserved - upload may take a moment.
+            </Typography>
+          )}
 
           <Stack spacing={2}>
             {files.map((file, index) => (
@@ -134,8 +144,8 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
                         src={URL.createObjectURL(file)}
                         alt={file.name}
                         sx={{
-                          width: 100,
-                          height: 100,
+                          width: 80,
+                          height: 80,
                           objectFit: 'cover',
                           borderRadius: 1,
                           border: `1px solid ${theme.palette.divider}`,
@@ -146,10 +156,9 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
                       <Box
                         component="video"
                         src={URL.createObjectURL(file)}
-                        controls
                         sx={{
-                          width: 100,
-                          height: 100,
+                          width: 80,
+                          height: 80,
                           objectFit: 'cover',
                           borderRadius: 1,
                           border: `1px solid ${theme.palette.divider}`,
@@ -159,6 +168,7 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
                     {file.type.startsWith('audio/') && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <IconButton
+                          size="small"
                           onClick={() => {
                             const audio = document.getElementById(`audio-${index}`) as HTMLAudioElement;
                             handleAudioPlay(index, audio);
@@ -166,10 +176,12 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
                           sx={{
                             bgcolor: theme.palette.primary.main,
                             color: 'white',
+                            width: 40,
+                            height: 40,
                             '&:hover': { bgcolor: theme.palette.primary.dark },
                           }}
                         >
-                          {audioPlaying === index ? <PauseIcon /> : <PlayIcon />}
+                          {audioPlaying === index ? <PauseIcon fontSize="small" /> : <PlayIcon fontSize="small" />}
                         </IconButton>
                         <audio
                           id={`audio-${index}`}
@@ -184,8 +196,8 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
                      !file.type.startsWith('audio/') && (
                       <Avatar
                         sx={{
-                          width: 100,
-                          height: 100,
+                          width: 80,
+                          height: 80,
                           bgcolor: theme.palette.primary.main,
                         }}
                       >
@@ -239,6 +251,20 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
           </Stack>
         </Box>
 
+        {/* Upload Progress */}
+        {isUploading && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="primary" sx={{ mb: 1 }}>
+              📤 Uploading files in original quality... {Math.round(uploadProgress)}%
+            </Typography>
+            <LinearProgress 
+              variant="determinate" 
+              value={uploadProgress} 
+              sx={{ borderRadius: 1 }}
+            />
+          </Box>
+        )}
+
         {/* Message Input */}
         <TextField
           fullWidth
@@ -264,9 +290,14 @@ const FilePreviewDialog: React.FC<FilePreviewDialogProps> = ({
           onClick={handleSend}
           variant="contained"
           startIcon={<SendIcon />}
-          disabled={files.length === 0}
+          disabled={files.length === 0 || isUploading}
+          sx={{
+            '&:disabled': {
+              bgcolor: theme.palette.action.disabled,
+            },
+          }}
         >
-          Send {files.length > 0 && `(${files.length})`}
+          {isUploading ? 'Uploading...' : `Send ${files.length > 0 ? `(${files.length})` : ''}`}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>RTCA Logo Generator</title>
+</head>
+<body>
+    <canvas id="logo192" width="192" height="192" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+    <canvas id="logo512" width="512" height="512" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+    <br>
+    <button onclick="downloadLogos()">Download Logos</button>
+
+    <script>
+        function createLogo(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#1976d2');
+            gradient.addColorStop(1, '#1565c0');
+            
+            // Draw background circle
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw letter "A"
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${size * 0.6}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('A', size/2, size/2);
+            
+            // Add a subtle shadow for depth
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = size * 0.02;
+            ctx.shadowOffsetX = size * 0.01;
+            ctx.shadowOffsetY = size * 0.01;
+        }
+        
+        // Create logos
+        createLogo(document.getElementById('logo192'), 192);
+        createLogo(document.getElementById('logo512'), 512);
+        
+        function downloadLogos() {
+            // Download 192x192 logo
+            const canvas192 = document.getElementById('logo192');
+            const link192 = document.createElement('a');
+            link192.download = 'logo192.png';
+            link192.href = canvas192.toDataURL();
+            link192.click();
+            
+            // Download 512x512 logo
+            setTimeout(() => {
+                const canvas512 = document.getElementById('logo512');
+                const link512 = document.createElement('a');
+                link512.download = 'logo512.png';
+                link512.href = canvas512.toDataURL();
+                link512.click();
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
