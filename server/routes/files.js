@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const path = require('path');
 const fs = require('fs');
 
@@ -66,7 +66,7 @@ const upload = multer({
 });
 
 // Upload single file
-router.post('/upload', auth, upload.single('file'), async (req, res) => {
+router.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -94,7 +94,7 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
 });
 
 // Upload multiple files
-router.post('/upload-multiple', auth, upload.array('files', 10), async (req, res) => {
+router.post('/upload-multiple', authenticateToken, upload.array('files', 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
@@ -122,7 +122,7 @@ router.post('/upload-multiple', auth, upload.array('files', 10), async (req, res
 });
 
 // Delete file
-router.delete('/delete/:publicId', auth, async (req, res) => {
+router.delete('/delete/:publicId', authenticateToken, async (req, res) => {
   try {
     if (process.env.NODE_ENV === 'production') {
       // Delete from Cloudinary
